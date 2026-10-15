@@ -50,6 +50,7 @@ export type Booking = {
   conversation_id: string;
   payment_id?: string;
   customer_name?: string;
+  staff_viewed_at: number | null;
 };
 export type Thread = {
   id: string;
@@ -68,6 +69,7 @@ export type Message = {
   sender_role: string;
   body: string;
   created_at: number;
+  staff_read_at: number | null;
 };
 export type Post = {
   id: string;
@@ -222,7 +224,12 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       setLive(true);
       setRevision((v) => v + 1);
     });
-    events.addEventListener("update", () => setRevision((v) => v + 1));
+    events.addEventListener("update", (event) => {
+      try {
+        window.dispatchEvent(new CustomEvent("yifan-update", {detail: JSON.parse((event as MessageEvent).data)}));
+      } catch { /* Re-fetch canonical state if an event payload is unavailable. */ }
+      setRevision((v) => v + 1);
+    });
     events.addEventListener("logout", () => {
       csrf = "";
       setUser(null);

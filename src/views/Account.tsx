@@ -14,7 +14,7 @@ import { useSite, useResource, send, statusNames, type Booking } from "../lib";
 import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components";
 
 export default function Account() {
-  const { money, date, time } = useFormatting();
+  const { money, date, time, dateTime } = useFormatting();
   const serviceTitle = useServiceTitle();
   const copy = useCopy();
   const { user, settings, revision, openChat } = useSite();
@@ -189,6 +189,11 @@ export default function Account() {
                   <span>{copy("套餐总价 ¥{v0}", { v0: money(b.price) })}</span>
                 </div>
               </div>
+              <p className={b.staff_viewed_at ? "booking-read-status read" : "booking-read-status"}>
+                {b.staff_viewed_at
+                  ? copy("工作人员已查看 · {v0}", {v0: dateTime(b.staff_viewed_at)})
+                  : copy("待工作人员查看")}
+              </p>
               <div className="booking-actions">
                 <button
                   className="text-button"

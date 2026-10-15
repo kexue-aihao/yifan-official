@@ -687,7 +687,14 @@
     "m_3f4eaee87826": "YOUR OWN MUSE",
     "m_f4b1ed3ea5c7": "THE PERFECT DRESS",
     "m_3d42cbcd12b3": "BEAUTY IN DETAIL",
-    "m_9aafe7ecc0cd": "BE WHO YOU IMAGINE"
+    "m_9aafe7ecc0cd": "BE WHO YOU IMAGINE",
+    "m_eec234ee756d": "Awaiting staff review",
+    "m_55eb751be262": "Viewed by staff",
+    "m_3278093cf3a2": "Viewed by staff · {v0}",
+    "m_c9801efe7090": "Read by staff",
+    "m_60823aaec73b": "Sent",
+    "m_b8700580aba8": "View booking details",
+    "m_bffea7e06b6e": "Booking details"
   },
   "common": {
     "consent": "I have read and agree to the <privacy>Privacy Policy</privacy> and <terms>Booking Terms</terms>.",

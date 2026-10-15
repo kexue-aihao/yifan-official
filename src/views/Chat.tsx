@@ -1,7 +1,7 @@
 "use client";
 import { useCopy, useFormatting, useServiceTitle } from "../i18n";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useLocation } from "../routing";
 import { X, Send, MessageCircle, ChevronLeft } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
   type Thread,
 } from "../lib";
 import { Empty, ErrorNotice, Loading } from "../components";
+import {useVisibleReceipt} from "../useVisibleReceipt";
 
 function mergeMessages(items: Message[]) {
   const cutoff = Date.now() - 180 * 86400000;
@@ -35,10 +36,43 @@ export function ConversationView({ threadId }: { threadId: string }) {
     [busy, setBusy] = useState(false),
     [older, setOlder] = useState<Message[]>([]),
     [hasOlder, setHasOlder] = useState(true);
+  const [readReceipts, setReadReceipts] = useState<Record<string, number>>({});
   const bottom = useRef<HTMLDivElement>(null);
+  const messageList = useRef<HTMLDivElement>(null);
+  const acknowledged = useRef(new Set<string>());
+  const pendingReads = useRef(new Set<string>());
+  const latestMessage = useRef<string | undefined>(undefined);
+  const acknowledge = useCallback((elements: HTMLElement[]) => {
+    const ids = elements.map(el => el.dataset.receiptId!).filter(id =>
+      !acknowledged.current.has(id) && !pendingReads.current.has(id),
+    ).slice(0, 100);
+    if (!ids.length) return;
+    ids.forEach(id => pendingReads.current.add(id));
+    void send<{receipts: {id: string; staff_read_at: number}[]}>(
+      `/conversations/${threadId}/read`, {messageIds: ids},
+    ).then(({receipts}) => {
+      receipts.forEach(r => acknowledged.current.add(r.id));
+      setError("");
+      messages.reload();
+    }).catch(e => setError(e.message)).finally(() => {
+      ids.forEach(id => pendingReads.current.delete(id));
+    });
+  }, [threadId, messages.reload]);
+  useVisibleReceipt(messageList, user?.role === "admin" && !!messages.data && !messages.loading, acknowledge);
   useEffect(() => {
     messages.reload();
   }, [revision, messages.reload]);
+  useEffect(() => {
+    const receive = (event: Event) => {
+      const data = (event as CustomEvent).detail;
+      if (data.type !== "messages-read" || data.conversationId !== threadId) return;
+      setReadReceipts(current => ({...current, ...Object.fromEntries(
+        data.receipts.map((r: {id: string; staff_read_at: number}) => [r.id, r.staff_read_at]),
+      )}));
+    };
+    window.addEventListener("yifan-update", receive);
+    return () => window.removeEventListener("yifan-update", receive);
+  }, [threadId]);
   useEffect(() => {
     setOlder([]);
     setHasOlder(true);
@@ -47,7 +81,10 @@ export function ConversationView({ threadId }: { threadId: string }) {
     // Preserve loaded history when a live update shifts the latest 100-message window.
     if (messages.data)
       setOlder((current) => mergeMessages([...current, ...messages.data!]));
-    bottom.current?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    const newest = messages.data?.at(-1)?.id;
+    if (newest && newest !== latestMessage.current)
+      bottom.current?.scrollIntoView({ block: "nearest", behavior: "instant" });
+    latestMessage.current = newest;
   }, [messages.data]);
   async function sendMessage(e: FormEvent) {
     e.preventDefault();
@@ -87,7 +124,7 @@ export function ConversationView({ threadId }: { threadId: string }) {
         {live ? copy("消息连接已建立") : copy("正在重连，发送的消息仍会保存")}
         <span>{copy("会话保留 180 天")}</span>
       </div>
-      <div className="message-list">
+      <div className="message-list" ref={messageList}>
         {messages.loading && !messages.data ? (
           <Loading />
         ) : !all.length ? (
@@ -113,7 +150,15 @@ export function ConversationView({ threadId }: { threadId: string }) {
                   {m.sender_role === "admin" ? copy("壹梵顾问") : m.sender_name}
                   <time>{dateTime(m.created_at)}</time>
                 </span>
-                <div className="message-bubble">{m.body}</div>
+                <div className="message-bubble"
+                  data-receipt-id={user?.role === "admin" && m.sender_role === "customer" && !m.staff_read_at
+                    ? m.id : undefined}>{m.body}</div>
+                {m.sender_id === user?.id && user?.role === "customer" && (
+                  <span className={m.staff_read_at || readReceipts[m.id] ? "message-receipt read" : "message-receipt"}
+                    title={m.staff_read_at || readReceipts[m.id] ? dateTime(m.staff_read_at || readReceipts[m.id]) : undefined}>
+                    {m.staff_read_at || readReceipts[m.id] ? copy("工作人员已读") : copy("已发送")}
+                  </span>
+                )}
               </div>
             ))}
           </>

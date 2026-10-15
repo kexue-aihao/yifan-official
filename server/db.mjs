@@ -58,6 +58,27 @@ export async function initializeDatabase(db) {
     .filter(Boolean))
     await db.exec(statement);
   await seedDatabase(db);
+  await migrateReadReceipts(db);
+}
+// Additive upgrade for installed sites; never recreate business data or infer
+// historical reads. A connection-scoped lock serializes concurrent startups.
+export async function migrateReadReceipts(db) {
+  const connection = await db.pool.getConnection();
+  let lockName;
+  try {
+    const [[row]] = await connection.query(
+      "SELECT CONCAT('yifan-receipts:', LEFT(SHA2(DATABASE(),256),40)) AS name",
+    );
+    lockName = row.name;
+    const [[lock]] = await connection.query("SELECT GET_LOCK(?,15) AS acquired", [lockName]);
+    if (lock.acquired !== 1) throw new Error("Could not acquire read receipt schema lock");
+    const sql = await readFile(new URL("./read-receipts.sql", import.meta.url), "utf8");
+    for (const statement of sql.split(';').map(s => s.trim()).filter(Boolean))
+      await connection.query(statement);
+  } finally {
+    if (lockName) await connection.query("SELECT RELEASE_LOCK(?)", [lockName]).catch(() => {});
+    connection.release();
+  }
 }
 export async function transaction(db, fn) {
   if (db.context.getStore()) return fn();

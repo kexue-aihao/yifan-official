@@ -4,7 +4,7 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import { z, ZodError } from "zod";
-import { openDatabase, id, transaction, maintenance } from "./db.mjs";
+import { openDatabase, id, transaction, maintenance, migrateReadReceipts } from "./db.mjs";
 import {apiLocale, validationError} from "./i18n.mjs";
 import {
   hashPassword,
@@ -105,6 +105,7 @@ const chinaNow = () =>
   new Date(Date.now() + 8 * 3600000).toISOString().slice(11, 16);
 export async function createApp(options = {}) {
   const db = options.db || (await openDatabase());
+  await migrateReadReceipts(db);
   const vault = options.vault || createVault();
   const origin =
     options.origin || process.env.APP_ORIGIN || "http://localhost:5173";
@@ -452,7 +453,7 @@ export async function createApp(options = {}) {
     res.json(
       await db
         .prepare(
-          "SELECT b.*, c.id AS conversation_id, p.id AS payment_id FROM bookings b LEFT JOIN conversations c ON c.booking_id=b.id LEFT JOIN payments p ON p.booking_id=b.id WHERE b.user_id=? ORDER BY b.created_at DESC LIMIT 200",
+          "SELECT b.*, c.id AS conversation_id, p.id AS payment_id, v.viewed_at AS staff_viewed_at FROM bookings b LEFT JOIN conversations c ON c.booking_id=b.id LEFT JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_staff_views v ON v.booking_id=b.id WHERE b.user_id=? ORDER BY b.created_at DESC LIMIT 200",
         )
         .all(req.user.id),
     );
@@ -698,7 +699,7 @@ export async function createApp(options = {}) {
     }
     const rows = await db
       .prepare(
-        "SELECT m.*,u.name AS sender_name,u.role AS sender_role FROM messages m JOIN users u ON u.id=m.sender_id WHERE conversation_id=? AND m.created_at>? AND (m.created_at<? OR (m.created_at=? AND m.seq<?)) ORDER BY m.created_at DESC, m.seq DESC LIMIT 100",
+        "SELECT m.*,u.name AS sender_name,u.role AS sender_role,r.read_at AS staff_read_at FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN message_staff_reads r ON r.message_id=m.id WHERE conversation_id=? AND m.created_at>? AND (m.created_at<? OR (m.created_at=? AND m.seq<?)) ORDER BY m.created_at DESC, m.seq DESC LIMIT 100",
       )
       .all(
         req.params.id,
@@ -708,6 +709,27 @@ export async function createApp(options = {}) {
         anchor.seq,
       );
     res.json(rows.reverse());
+  });
+  app.post("/api/conversations/:id/read", admin, writeLimit, async (req, res) => {
+    const thread = await threadOwner(req, req.params.id);
+    const { messageIds } = z.object({messageIds: z.array(z.uuid()).min(1).max(100)}).parse(req.body);
+    const ids = [...new Set(messageIds)];
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = await db.prepare(
+      "SELECT id FROM messages WHERE conversation_id=? AND sender_id=? AND created_at>? AND id IN (" + placeholders + ")",
+    ).all(thread.id, thread.user_id, retainAfter(), ...ids);
+    if (rows.length !== ids.length) fail(404, "该历史消息已过期或不存在");
+    const readAt = Date.now();
+    const result = await db.prepare(
+      "INSERT IGNORE INTO message_staff_reads(message_id,staff_id,read_at) SELECT id,?,? FROM messages WHERE conversation_id=? AND sender_id=? AND created_at>? AND id IN (" + placeholders + ")",
+    ).run(req.user.id, readAt, thread.id, thread.user_id, retainAfter(), ...ids);
+    const receipts = await db.prepare(
+      "SELECT message_id AS id,read_at AS staff_read_at FROM message_staff_reads WHERE message_id IN (" + placeholders + ")",
+    ).all(...ids);
+    if (result.changes) emit([thread.user_id, ...(await admins())], {
+      type: "messages-read", conversationId: thread.id, receipts,
+    });
+    res.json({receipts});
   });
   app.post(
     "/api/conversations/:id/messages",
@@ -889,10 +911,22 @@ export async function createApp(options = {}) {
     res.json(
       await db
         .prepare(
-          "SELECT b.*,u.name AS customer_name,c.id AS conversation_id FROM bookings b JOIN users u ON u.id=b.user_id LEFT JOIN conversations c ON c.booking_id=b.id ORDER BY b.created_at DESC LIMIT 500",
+          "SELECT b.*,u.name AS customer_name,c.id AS conversation_id,v.viewed_at AS staff_viewed_at FROM bookings b JOIN users u ON u.id=b.user_id LEFT JOIN conversations c ON c.booking_id=b.id LEFT JOIN booking_staff_views v ON v.booking_id=b.id ORDER BY b.created_at DESC LIMIT 500",
         )
         .all(),
     );
+  });
+  app.post("/api/admin/bookings/:id/view", writeLimit, async (req, res) => {
+    const booking = await db.prepare("SELECT id,user_id FROM bookings WHERE id=?").get(req.params.id);
+    if (!booking) fail(404, "预约不存在");
+    const result = await db.prepare(
+      "INSERT IGNORE INTO booking_staff_views(booking_id,staff_id,viewed_at) VALUES (?,?,?)",
+    ).run(booking.id, req.user.id, Date.now());
+    const receipt = await db.prepare(
+      "SELECT viewed_at AS staff_viewed_at FROM booking_staff_views WHERE booking_id=?",
+    ).get(booking.id);
+    if (result.changes) emit([booking.user_id, ...(await admins())], {type:"booking-viewed",bookingId:booking.id});
+    res.json(receipt);
   });
   app.patch("/api/admin/bookings/:id", async (req, res) => {
     const { status } = z

@@ -687,7 +687,14 @@
     "m_3f4eaee87826": "VOTRE PROPRE MUSE",
     "m_f4b1ed3ea5c7": "LA ROBE IDÉALE",
     "m_3d42cbcd12b3": "LA BEAUTÉ DU DÉTAIL",
-    "m_9aafe7ecc0cd": "DEVENEZ QUI VOUS IMAGINEZ"
+    "m_9aafe7ecc0cd": "DEVENEZ QUI VOUS IMAGINEZ",
+    "m_eec234ee756d": "En attente de consultation",
+    "m_55eb751be262": "Consulté par le personnel",
+    "m_3278093cf3a2": "Consulté par le personnel · {v0}",
+    "m_c9801efe7090": "Lu par le personnel",
+    "m_60823aaec73b": "Envoyé",
+    "m_b8700580aba8": "Voir les détails de la réservation",
+    "m_bffea7e06b6e": "Détails de la réservation"
   },
   "common": {
     "consent": "J’ai lu et j’accepte la <privacy>politique de confidentialité</privacy> et les <terms>conditions de réservation</terms>.",

@@ -687,7 +687,14 @@
     "m_3f4eaee87826": "IHRE EIGENE MUSE",
     "m_f4b1ed3ea5c7": "DAS PERFEKTE KLEID",
     "m_3d42cbcd12b3": "SCHÖNHEIT IM DETAIL",
-    "m_9aafe7ecc0cd": "WERDEN SIE, WEN SIE SICH VORSTELLEN"
+    "m_9aafe7ecc0cd": "WERDEN SIE, WEN SIE SICH VORSTELLEN",
+    "m_eec234ee756d": "Wartet auf Sichtung",
+    "m_55eb751be262": "Vom Team angesehen",
+    "m_3278093cf3a2": "Vom Team angesehen · {v0}",
+    "m_c9801efe7090": "Vom Team gelesen",
+    "m_60823aaec73b": "Gesendet",
+    "m_b8700580aba8": "Buchungsdetails ansehen",
+    "m_bffea7e06b6e": "Buchungsdetails"
   },
   "common": {
     "consent": "Ich habe die <privacy>Datenschutzerklärung</privacy> und die <terms>Buchungsbedingungen</terms> gelesen und stimme ihnen zu.",

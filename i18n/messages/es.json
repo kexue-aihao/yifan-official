@@ -687,7 +687,14 @@
     "m_3f4eaee87826": "TU PROPIA MUSA",
     "m_f4b1ed3ea5c7": "EL VESTIDO PERFECTO",
     "m_3d42cbcd12b3": "BELLEZA EN LOS DETALLES",
-    "m_9aafe7ecc0cd": "SÉ QUIEN IMAGINAS"
+    "m_9aafe7ecc0cd": "SÉ QUIEN IMAGINAS",
+    "m_eec234ee756d": "Pendiente de revisión",
+    "m_55eb751be262": "Visto por el personal",
+    "m_3278093cf3a2": "Visto por el personal · {v0}",
+    "m_c9801efe7090": "Leído por el personal",
+    "m_60823aaec73b": "Enviado",
+    "m_b8700580aba8": "Ver detalles de la reserva",
+    "m_bffea7e06b6e": "Detalles de la reserva"
   },
   "common": {
     "consent": "He leído y acepto la <privacy>política de privacidad</privacy> y las <terms>condiciones de reserva</terms>.",

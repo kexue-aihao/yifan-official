@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { createTranslator } from "next-intl";
 import { locales } from "../../i18n/locales.mjs";
+import {randomUUID} from "node:crypto";
+import mysql from "mysql2/promise";
 
 const messageIndex = JSON.parse(readFileSync("i18n/source-map.json", "utf8"));
 const translated = (locale: string) => {
@@ -148,6 +150,49 @@ test("桌面与手机视觉、导航、作品筛选", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("客服只确认可视消息，滚动和加载更早历史后分别产生回执", async ({page, browser}) => {
+  const origin = "http://127.0.0.1:4174";
+  const fixture = JSON.parse(readFileSync("artifacts/ui-fixture.json", "utf8"));
+  const account = await page.request.post("/api/auth/register", {
+    headers: {origin},
+    data: {name: "历史回执顾客", email: `history-${Date.now()}@example.com`, password: "HistoryCustomer123!", consent: true},
+  }).then(r => r.json());
+  const thread = await page.request.post("/api/conversations", {
+    headers: {origin, "x-csrf-token": account.csrf}, data: {},
+  }).then(r => r.json());
+  const ids = Array.from({length: 105}, () => randomUUID());
+  const db = await mysql.createConnection(fixture.connection);
+  try {
+    await db.query("INSERT INTO messages(id,conversation_id,sender_id,body,created_at) VALUES ?", [
+      ids.map((id, index) => [id, thread.id, account.user.id, index === 104
+        ? "一条超过消息视区高度的长消息。".repeat(130) : `历史消息 ${index}`, Date.now() - 105 + index]),
+    ]);
+  } finally {await db.end();}
+  const context = await browser.newContext({locale: "zh-CN"});
+  const admin = await context.newPage();
+  try {
+    await admin.goto(origin + "/login?next=/admin");
+    await admin.getByRole("textbox", {name: "邮箱地址"}).fill("browser-admin@example.com");
+    await admin.locator("input[name=password]").fill("BrowserAdmin123!");
+    await admin.getByRole("button", {name: "登录壹梵"}).click();
+    await admin.getByRole("button", {name: "客服收件箱"}).click();
+    await expect(admin.locator(".message-bubble")).toHaveCount(100);
+    const list = admin.locator(".message-list");
+    const history = (before?: string) => page.request.get(`/api/conversations/${thread.id}/messages${before ? `?before=${before}` : ""}`).then(r => r.json());
+    const receipt = async (id: string) => (await history()).find((m: {id: string}) => m.id === id)?.staff_read_at;
+    await expect.poll(() => receipt(ids[104])).toBeGreaterThan(0);
+    expect(await receipt(ids[5])).toBeNull();
+    expect((await history(ids[5])).find((m: {id: string}) => m.id === ids[0]).staff_read_at).toBeNull();
+    await list.evaluate(el => {el.scrollTop = 0;});
+    await expect.poll(() => receipt(ids[5])).toBeGreaterThan(0);
+    expect((await history(ids[5])).find((m: {id: string}) => m.id === ids[0]).staff_read_at).toBeNull();
+    await admin.getByRole("button", {name: "查看更早消息"}).click();
+    await expect(admin.locator(".message-bubble")).toHaveCount(105);
+    await list.evaluate(el => {el.scrollTop = 0;});
+    await expect.poll(async () => (await history(ids[5])).find((m: {id: string}) => m.id === ids[0]).staff_read_at).toBeGreaterThan(0);
+  } finally {await context.close();}
+});
+
 test("英语注册预约、语言切换保留查询和锚点、原始顾客内容保持不变", async ({
   page,
 }) => {
@@ -291,6 +336,7 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   page,
   browser,
 }) => {
+  test.setTimeout(60000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/services");
@@ -317,6 +363,7 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   await expect(
     page.getByText("待付订金", { exact: true }).last(),
   ).toBeVisible();
+  await expect(page.locator(".booking-read-status")).toHaveText("待工作人员查看");
   await page.getByRole("button", { name: "支付订金" }).click();
   await expect(
     page.getByRole("heading", { name: "在线支付尚未开通" }),
@@ -330,6 +377,8 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   await expect(
     page.locator(".message-bubble").filter({ hasText: "自带礼服" }),
   ).toBeVisible();
+  const customerMessage = page.locator(".message").filter({hasText: "自带礼服"});
+  await expect(customerMessage.locator(".message-receipt")).toHaveText("已发送");
   const adminContext = await browser.newContext({ locale: "zh-CN" });
   const admin = await adminContext.newPage();
   await admin.goto("http://127.0.0.1:4174/login?next=/admin");
@@ -341,12 +390,51 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   await expect(
     admin.getByRole("heading", { name: "品牌工作台" }),
   ).toBeVisible();
+  await admin.bringToFront();
+  await admin.getByRole("button", {name: "预约管理", exact: true}).click();
+  const order = admin.locator(".admin-order").filter({hasText: "小梵"});
+  await expect(order.locator(".booking-read-status")).toHaveText("待工作人员查看");
+  // Fetching the full list must leave every booking untouched.
+  expect((await page.request.get("/api/bookings").then(r => r.json()))[0].staff_viewed_at).toBeNull();
+  await order.getByRole("button", {name: "查看预约详情"}).click();
+  await expect(admin.getByRole("dialog")).toBeVisible();
+  await expect(page.locator(".booking-read-status")).toContainText("工作人员已查看 ·");
+  const firstView = (await page.request.get("/api/bookings").then(r => r.json()))[0].staff_viewed_at;
+  await admin.keyboard.press("Escape");
+  await order.getByRole("button", {name: "查看预约详情"}).click();
+  await expect(admin.getByRole("dialog").locator(".booking-read-status")).toHaveText("工作人员已查看");
+  expect((await page.request.get("/api/bookings").then(r => r.json()))[0].staff_viewed_at).toBe(firstView);
+  await admin.keyboard.press("Escape");
+  await expect(admin.locator(".admin-order").filter({hasText: "花影 · Alex"}).locator(".booking-read-status"))
+    .toHaveText("待工作人员查看");
   await admin.getByRole("button", { name: "客服收件箱" }).click();
   await expect(
     admin
       .locator(".inbox-conversation .message-bubble")
       .filter({ hasText: "自带礼服" }),
   ).toBeVisible();
+  await expect(customerMessage.locator(".message-receipt")).toHaveText("工作人员已读");
+  // Keep the staff page open in the background while a new message arrives.
+  // Headless Chrome emulates focus for each context, so supply the browser's
+  // background signal explicitly while continuing real requests and rendering.
+  await admin.evaluate(() => {
+    Object.defineProperty(document, "hasFocus", {configurable: true, value: () => false});
+    window.dispatchEvent(new Event("blur"));
+  });
+  await page.getByRole("textbox", {name: "消息内容"}).fill("后台窗口未激活时，请保持未读。");
+  await page.getByRole("button", {name: "发送消息"}).click();
+  const backgroundMessage = page.locator(".message").filter({hasText: "后台窗口未激活"});
+  await expect(admin.locator(".message-bubble").filter({hasText: "后台窗口未激活"})).toBeVisible();
+  await expect(backgroundMessage.locator(".message-receipt")).toHaveText("已发送");
+  // A round trip after rendering confirms the status is stored, not just delayed UI.
+  const thread = (await page.request.get("/api/bookings").then(r => r.json()))[0].conversation_id;
+  expect((await page.request.get(`/api/conversations/${thread}/messages`).then(r => r.json())).at(-1).staff_read_at).toBeNull();
+  await admin.evaluate(() => {
+    Reflect.deleteProperty(document, "hasFocus");
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect(backgroundMessage.locator(".message-receipt")).toHaveText("工作人员已读");
+  await page.screenshot({path: "artifacts/customer-read-receipts.png", fullPage: true});
   await admin
     .getByRole("textbox", { name: "消息内容" })
     .fill("可以，我们会提前沟通搭配。");

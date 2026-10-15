@@ -1779,6 +1779,23 @@ legend small {
 .message.mine .message-bubble {
   background: #dce2d1;
 }
+.message-receipt {
+  margin-block-start: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.message-receipt.read, .booking-read-status.read {
+  color: #52613e;
+}
+.booking-read-status {
+  font-size: 12px;
+  color: var(--muted);
+  margin-block: 10px;
+}
+.booking-details p {
+  margin-block: 14px;
+  overflow-wrap: anywhere;
+}
 .chat-composer {
   display: flex;
   gap: 8px;

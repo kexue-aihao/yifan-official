@@ -7,7 +7,7 @@ import {
   countMessages,
 } from "../i18n";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   BarChart3,
   CalendarDays,
@@ -36,6 +36,7 @@ import {
 } from "../lib";
 import { Empty, ErrorNotice, Loading, Modal } from "../components";
 import { ConversationView } from "./Chat";
+import {useVisibleReceipt} from "../useVisibleReceipt";
 
 type AdminSettings = {
   site: SiteConfig;
@@ -100,6 +101,7 @@ export default function Admin() {
   );
   const posts = useResource<Post[]>(tab === "posts" ? "/admin/posts" : null);
   const [edit, setEdit] = useState<Service | null>(null),
+    [viewedBooking, setViewedBooking] = useState<Booking | null>(null),
     [threadId, setThreadId] = useState(""),
     [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
@@ -292,6 +294,12 @@ export default function Admin() {
                         </p>
                       )}
                       <div className="admin-order-actions">
+                        <button className="text-button" onClick={() => setViewedBooking(b)}>
+                          <Eye size={15} /> {copy("查看预约详情")}
+                        </button>
+                        <span className="booking-read-status">
+                          {b.staff_viewed_at ? copy("工作人员已查看") : copy("待工作人员查看")}
+                        </span>
                         <button
                           className="text-button"
                           onClick={() => {
@@ -528,6 +536,10 @@ export default function Admin() {
             )}
           </>
         )}
+        {viewedBooking && (
+          <BookingDetails booking={viewedBooking} onClose={() => setViewedBooking(null)}
+            onViewed={() => bookings.reload()} />
+        )}
         {edit && (
           <ServiceForm
             service={edit}
@@ -542,6 +554,40 @@ export default function Admin() {
         )}
       </section>
     </div>
+  );
+}
+
+function BookingDetails({booking, onClose, onViewed}: {
+  booking: Booking; onClose: () => void; onViewed: () => void;
+}) {
+  const copy = useCopy();
+  const {date, money} = useFormatting();
+  const serviceTitle = useServiceTitle();
+  const ref = useRef<HTMLDivElement>(null);
+  const pending = useRef(false);
+  const [viewed, setViewed] = useState(!!booking.staff_viewed_at);
+  const [error, setError] = useState("");
+  const acknowledge = useCallback(() => {
+    if (pending.current) return;
+    pending.current = true;
+    void send(`/admin/bookings/${booking.id}/view`, {}).then(() => {
+      setViewed(true);
+      onViewed();
+    }).catch(e => {setError(e.message); pending.current = false;});
+  }, [booking.id, onViewed]);
+  useVisibleReceipt(ref, !viewed, acknowledge);
+  return (
+    <Modal title={copy("预约详情")} onClose={onClose}>
+      <div ref={ref} className="booking-details">
+        <h3 data-receipt-id={booking.id}>{serviceTitle(booking.service_id, booking.service_title)}</h3>
+        <p>{date(booking.day)} · {booking.time}</p>
+        <p>{booking.contact_name} · {booking.phone}</p>
+        <p>{money(booking.deposit)} / {money(booking.price)}</p>
+        {booking.note && <p className="booking-note">{booking.note}</p>}
+        <p className="booking-read-status">{viewed ? copy("工作人员已查看") : copy("待工作人员查看")}</p>
+        <ErrorNotice error={error} />
+      </div>
+    </Modal>
   );
 }
 

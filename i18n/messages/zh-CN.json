@@ -687,7 +687,14 @@
     "m_3f4eaee87826": "YOUR OWN MUSE",
     "m_f4b1ed3ea5c7": "THE PERFECT DRESS",
     "m_3d42cbcd12b3": "BEAUTY IN DETAIL",
-    "m_9aafe7ecc0cd": "BE WHO YOU IMAGINE"
+    "m_9aafe7ecc0cd": "BE WHO YOU IMAGINE",
+    "m_eec234ee756d": "待工作人员查看",
+    "m_55eb751be262": "工作人员已查看",
+    "m_3278093cf3a2": "工作人员已查看 · {v0}",
+    "m_c9801efe7090": "工作人员已读",
+    "m_60823aaec73b": "已发送",
+    "m_b8700580aba8": "查看预约详情",
+    "m_bffea7e06b6e": "预约详情"
   },
   "common": {
     "consent": "我已阅读并同意<privacy>隐私说明</privacy>与<terms>预约须知</terms>。",
