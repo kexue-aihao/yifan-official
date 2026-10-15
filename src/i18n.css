@@ -1,0 +1,270 @@
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+.language-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 11rem;
+  position: relative;
+  color: var(--wine, #542b3a);
+  flex-shrink: 0;
+}
+.language-switcher select {
+  font: inherit;
+  font-size: 12px;
+  border: 0;
+  border-bottom: 1px solid #d7c8cc;
+  background: transparent;
+  max-width: 9rem;
+  padding: 0.6rem 0.15rem;
+  color: inherit;
+  cursor: pointer;
+}
+.language-switcher select:focus-visible {
+  outline: 2px solid #542b3a;
+  outline-offset: 3px;
+}
+.language-switcher select:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+.install-topline .language-switcher {
+  margin-inline-start: auto;
+}
+html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)) .cinema h1 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.6rem, 5.5vw, 5.7rem);
+  letter-spacing: -0.035em;
+}
+html:not(:lang(zh)) .cinema-line {
+  overflow: visible;
+}
+html:not(:lang(zh)) .cinema-line > span {
+  white-space: normal;
+}
+html:not(:lang(zh)) .nav {
+  gap: clamp(0.7rem, 1.4vw, 1.5rem);
+}
+html:not(:lang(zh)) .nav a {
+  font-size: 12px;
+  white-space: normal;
+}
+.filter-tabs {
+  flex-wrap: wrap;
+}
+.button,
+.install-steps li {
+  white-space: normal;
+  text-align: center;
+}
+.form label,
+.admin-sidebar nav button {
+  overflow-wrap: anywhere;
+}
+input[type="email"],
+input[type="url"],
+input[type="tel"],
+input[type="date"],
+input[inputmode="numeric"] {
+  direction: ltr;
+  text-align: start;
+}
+.post-content,
+.message-bubble,
+.comment p {
+  unicode-bidi: plaintext;
+}
+html[dir="rtl"] {
+  font-family: Tahoma, Arial, sans-serif;
+}
+[dir="rtl"] h1,
+[dir="rtl"] h2,
+[dir="rtl"] h3 {
+  font-family: Tahoma, Arial, sans-serif;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+[dir="rtl"] .cinema-content {
+  text-align: right;
+}
+[dir="rtl"] .cinema-caption {
+  left: 2rem;
+  right: auto;
+}
+[dir="rtl"] .cinema-curtain {
+  transform-origin: left;
+}
+[dir="rtl"] .chat-launcher,
+[dir="rtl"] .chat-panel {
+  right: auto;
+  left: 24px;
+}
+[dir="rtl"] .chat-heading,
+[dir="rtl"] .footer,
+[dir="rtl"] .admin-sidebar,
+[dir="rtl"] .form {
+  text-align: start;
+}
+[dir="rtl"] .scene-next svg,
+[dir="rtl"] .back-link svg,
+[dir="rtl"] .chat-thread-toggle svg {
+  transform: scaleX(-1);
+}
+[dir="rtl"] .password-input button {
+  right: auto;
+  left: 9px;
+}
+[dir="rtl"] .password-input input {
+  padding-right: 14px !important;
+  padding-left: 48px !important;
+}
+[dir="rtl"] .text-button,
+[dir="rtl"] .inbox-threads > button,
+[dir="rtl"] .thread-list > button {
+  text-align: start;
+}
+[dir="rtl"] .booking-amount {
+  text-align: end;
+}
+[dir="rtl"] .message.mine {
+  margin-left: 0;
+  margin-inline-start: auto;
+}
+[dir="rtl"] .inbox-threads {
+  border-right: 0;
+  border-left: 1px solid var(--line);
+}
+[dir="rtl"] .inbox-threads > button.active {
+  border-left: 0;
+  border-right: 2px solid var(--gold);
+}
+[dir="rtl"] .button svg,
+[dir="rtl"] .under-link svg {
+  transform: scaleX(-1);
+}
+[dir="rtl"] .brand-symbol,
+[dir="rtl"] .brand-type small,
+[dir="rtl"] .order-id {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+@media (max-width: 1250px) {
+  .header-book {
+    display: none;
+  }
+  .header-inner {
+    gap: 1rem;
+  }
+  .header-actions {
+    gap: 0.7rem;
+  }
+  .nav {
+    gap: 0.8rem;
+  }
+}
+@media (max-width: 1050px) {
+  .header .nav {
+    position: fixed;
+    top: 88px;
+    inset-inline: 0;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    background: #faf8f6;
+    padding: 1.5rem 6%;
+    border-bottom: 1px solid #e8dfe1;
+    z-index: 20;
+  }
+  .header .nav.open {
+    display: flex;
+  }
+  .header .menu-toggle {
+    display: inline-flex;
+  }
+  .header .nav a {
+    padding: 0.8rem;
+    font-size: 15px;
+  }
+}
+@media (max-width: 600px) {
+  .header-inner {
+    gap: 0.45rem;
+  }
+  .header-actions {
+    gap: 0.35rem;
+  }
+  .language-switcher {
+    max-width: 7.8rem;
+  }
+  .language-switcher select {
+    max-width: 6rem;
+    font-size: 11px;
+  }
+  .header .brand-type small {
+    font-size: 7px;
+  }
+  .header .brand-type {
+    font-size: 16px;
+  }
+  .header .brand-symbol {
+    display: none;
+  }
+  .header .account-link span,
+  .header .admin-link {
+    display: none;
+  }
+  .header .nav {
+    top: 76px;
+  }
+  .install-topline {
+    gap: 0.7rem;
+  }
+  .install-topline > svg {
+    display: none;
+  }
+  .install-topline .language-switcher {
+    max-width: 10rem;
+  }
+  .install-steps {
+    gap: 0.4rem;
+  }
+  .install-steps li {
+    font-size: 11px;
+  }
+  .cinema-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .scene-picker {
+    gap: 0.5rem;
+  }
+  .scene-picker > span {
+    max-width: 11rem;
+  }
+  .cinema-bottom {
+    gap: 0.7rem;
+  }
+  .cinema-scroll {
+    font-size: 11px;
+  }
+  [dir="rtl"] .chat-panel {
+    left: 10px;
+    right: 10px;
+  }
+  [dir="rtl"] .chat-launcher {
+    left: 16px;
+  }
+  .account-toolbar {
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+}

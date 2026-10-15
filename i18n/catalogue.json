@@ -1,0 +1,80 @@
+{
+  "bridal": {
+    "title": "婚纱摄影",
+    "english": "THE WEDDING",
+    "category": "婚纱拍摄",
+    "description": "把心动，写进光影里。以自然的情绪和细腻的镜头语言，珍藏属于你们的婚纱记忆。",
+    "duration": "半日专属拍摄",
+    "features": [
+      "一对一风格沟通",
+      "精修影像 20 张",
+      "两套婚纱与造型",
+      "全程专属摄影师"
+    ]
+  },
+  "birthday": {
+    "title": "生日宴会布置",
+    "english": "A DAY TO CELEBRATE",
+    "category": "生日宴会",
+    "description": "从花艺、色彩到每一处桌面细节，为值得庆祝的一天，营造只属于你的仪式感。",
+    "duration": "按场地定制",
+    "features": [
+      "主题方案设计",
+      "花艺与场景布置",
+      "现场搭建服务",
+      "专属色彩搭配"
+    ]
+  },
+  "fashion": {
+    "title": "服装与写真",
+    "english": "YOUR OWN MUSE",
+    "category": "服装拍摄",
+    "description": "不必成为别人。无论日常风格、个人写真或品牌服装，用影像呈现你的独特表达。",
+    "duration": "约 2 小时",
+    "features": [
+      "风格策划与沟通",
+      "精修影像 12 张",
+      "两套服装拍摄",
+      "支持男女生写真"
+    ]
+  },
+  "rental": {
+    "title": "婚纱礼服租赁",
+    "english": "THE PERFECT DRESS",
+    "category": "婚纱租赁",
+    "description": "让一袭礼服，回应你对美的想象。从试纱到搭配，细致陪伴每一个重要选择。",
+    "duration": "租期到店沟通",
+    "features": [
+      "预约到店试纱",
+      "礼服搭配建议",
+      "尺码调整咨询",
+      "专业清洁养护"
+    ]
+  },
+  "makeup": {
+    "title": "化妆造型拍摄",
+    "english": "BEAUTY IN DETAIL",
+    "category": "化妆拍摄",
+    "description": "在细节里，看见本来的光彩。定制造型与镜头美学，让美自然发生。",
+    "duration": "约 2 小时",
+    "features": [
+      "专属妆容沟通",
+      "专业化妆与发型",
+      "精修影像 9 张",
+      "提供造型建议"
+    ]
+  },
+  "cosplay": {
+    "title": "Cosplay 主题摄影",
+    "english": "BE WHO YOU IMAGINE",
+    "category": "Cosplay",
+    "description": "跨越日常，走进热爱的角色。女生、男生和每一种表达，都值得被认真记录。",
+    "duration": "约 3 小时",
+    "features": [
+      "角色与分镜沟通",
+      "精修影像 15 张",
+      "主题光影布景",
+      "支持男生女生拍摄"
+    ]
+  }
+}
