@@ -6,7 +6,13 @@ Next.js App Router / React 19 / TypeScript / Motion 前端，Express 5 / Node.js
 
 顾客预约显示工作人员是否已查看及首次查看时间，客服消息显示已发送或工作人员已读。管理员打开预约详情、在前台窗口看到对应消息后才记录回执，单独加载列表不计已读；状态通过 SSE 同步。已安装网站启动时自动新增回执表，保留历史数据，历史记录默认未读，无需重新安装。
 
+提供象牙香槟、玫瑰雾粉、翡翠雅绿和午夜鎏金四套品牌主题，覆盖首页、服务、预约、客服及后台。页头“主题”按钮可预览切换，浏览器保存个人选择一年；后台“品牌与支付 → 品牌主题”设置新访客默认主题，访客可恢复跟随品牌默认。服务端首屏读取偏好，刷新时直接呈现所选主题；支持11种语言、RTL及减弱动态。四套主题分别采用电影叙事、浪漫拼贴、自然工作室、时装画册的独立排版，服务页和作品画廊也各有结构。主题沿用设置 JSON，无需重新安装。
+
+后台“访问与 IP”记录注册 ID、页面 IP、估算归属地和访问次数，并关联预约及客服会话；支持 IPv4/IPv6、按 IP/账号查询、页面与活动次数分开统计、180天自动清理。旧站启动时自动添加审计表。IP使用本地 GeoLite 数据库，位置为估算；反向代理设置及数据更新见本地 docs/local/visitor-audit.md。
+
 ## 首次安装
+
+社区支持 HTTPS 图床直链、Markdown / BBCode 图片语法、附件预览及每帖最多9张图片；列表和详情公开作者注册 ID。后台“社区管理 → 发布来源追溯”可按帖子/注册ID/IP/指纹查找发布时来源，仅管理员可查看，保存180天。指纹只用于辅助关联，不能证明自然人身份。后台“站点图片”统一替换8处示例图并应用到各主题和默认套餐，“定制服务”也可单独设置配图外链。升级启动自动添加表，无需重新安装；操作与API详见本地 docs/local/community-media.md。
 
 1. 准备 Node.js 24 和 MySQL 8.0+。**在部署前创建独立的空数据库**及专用账号；数据库字符集必须为 utf8mb4。应用不会创建数据库。
 2. `npm install`，复制 `.env.example` 为 `.env`，设置访问地址 `APP_ORIGIN`。
@@ -29,7 +35,9 @@ ON yifan.* TO 'yifan'@'localhost';
 
 ## 生产运行
 
-设置 `NODE_ENV=production`、`APP_ORIGIN=https://你的域名`（无末尾斜杠）、`PORT=3001`、`YIFAN_DATA_DIR=./data`。在受信的单层 HTTPS 反向代理后设置 `TRUST_PROXY=1`。
+设置 `NODE_ENV=production`、`APP_ORIGIN=https://你的域名`（无末尾斜杠）、`PORT=3001`、`YIFAN_DATA_DIR=./data`。Nginx 经 `127.0.0.1` 或 `::1` 连接本机 Node 时设置 `TRUST_PROXY=1`，该值只信任回环代理。异机或容器代理应填写 Node 实际看到的代理 IP/CIDR，多个用逗号分隔；直连保持 `0`。
+
+Nginx 必须用 `proxy_set_header X-Forwarded-For $remote_addr;` 覆盖转发头，3001 端口仅允许可信代理访问。有 CDN 时先在 Nginx 按 CDN 官方 IP 范围核实来源并还原客户端地址，再转发给 Node，否则可能记录成 CDN IP。具体配置与公网验收见本地 `docs/local/visitor-audit.md`。
 
 ```powershell
 npm run build

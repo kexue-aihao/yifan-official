@@ -541,7 +541,7 @@
 .install-aside {
   background:
     linear-gradient(0deg, #3b2239c9, #3b22396b),
-    url("/images/dress.jpg") center/cover;
+    var(--image-dress, url("/images/dress.jpg")) center/cover;
   color: white;
   display: flex;
   flex-direction: column;

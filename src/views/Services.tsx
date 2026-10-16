@@ -1,9 +1,10 @@
 "use client";
+import {SiteImage} from '../MediaProvider';
 import { useCopy, useFormatting, countMessages } from "../i18n";
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "../routing";
-import { Check, CalendarDays, Clock3, ShieldCheck } from "lucide-react";
+import { CalendarDays, ShieldCheck } from "lucide-react";
 import {
   useSite,
   useResource,
@@ -13,10 +14,12 @@ import {
   type Booking,
 } from "../lib";
 import { Arrow, ErrorNotice, Modal, Loading } from "../components";
+import ServiceLayouts from './ServiceLayouts';
+import {useTheme} from '../ThemeProvider';
 import ConsentText from "../ConsentText";
 
 export default function Services() {
-  const { money } = useFormatting();
+  const {theme}=useTheme();
   const copy = useCopy();
   const { services, settings, user } = useSite();
   const navigate = useNavigate();
@@ -38,7 +41,7 @@ export default function Services() {
   }
   const filters = ["全部服务", ...new Set(services.map((s) => s.category))];
   return (
-    <div className="page services-page container">
+    <div className={`page services-page container services-${theme}`}>
       <div className="page-title">
         <span className="eyebrow">{copy("MADE FOR YOU, AND ONLY YOU")}</span>
         <h1>{copy("你的美好，专属定制。")}</h1>
@@ -65,58 +68,7 @@ export default function Services() {
           {copy("当前展示示例套餐与价格，正式方案及报价请与顾问沟通确认。")}
         </p>
       )}
-      <div className="packages-grid">
-        {services
-          .filter((s) => filter === "全部服务" || s.category === filter)
-          .map((service) => (
-            <article className="package-card" key={service.id}>
-              <div className="image-wrap">
-                <img
-                  src={service.image}
-                  alt={copy("{v0}风格示意", { v0: service.title })}
-                  loading="lazy"
-                />
-                {service.featured && (
-                  <span className="package-badge">{copy("壹梵精选")}</span>
-                )}
-              </div>
-              <div className="package-content">
-                <span className="eyebrow">{service.english}</span>
-                <h2>{service.title}</h2>
-                <p className="package-description">{service.description}</p>
-                <div className="package-price">
-                  <strong>{money(service.price)}</strong>
-                  <span>{copy("套餐参考价")}</span>
-                  <span className="duration">
-                    <Clock3 size={14} />
-                    {service.duration}
-                  </span>
-                </div>
-                <ul className="feature-list">
-                  {service.features.map((f) => (
-                    <li key={f}>
-                      <Check size={15} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className="button full"
-                  onClick={() => book(service)}
-                  disabled={!settings?.booking.enabled}
-                >
-                  {copy("预约专属体验")}
-                  <Arrow />
-                </button>
-                <p className="deposit-note">
-                  {copy("预约订金 ¥{v0} · 抵扣套餐费用", {
-                    v0: money(service.deposit),
-                  })}
-                </p>
-              </div>
-            </article>
-          ))}
-      </div>
+      <ServiceLayouts services={services.filter(s=>filter==='全部服务'||s.category===filter)} book={book} enabled={!!settings?.booking.enabled}/>
       {!services.length && <Loading />}
       <div className="service-assurance">
         <span>
@@ -198,7 +150,7 @@ function BookingModal({
   return (
     <Modal title={copy("预约你的专属时刻")} onClose={onClose}>
       <div className="booking-summary">
-        <img src={service.image} alt="" />
+        <SiteImage src={service.image} alt="" />
         <div>
           <span className="eyebrow">{service.english}</span>
           <h3>{service.title}</h3>

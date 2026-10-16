@@ -6,6 +6,7 @@ export async function seedDatabase(db) {
       hours: "10:00 — 20:00",
       wechat: "",
       samplePricing: true,
+      defaultTheme: "ivory",
     },
     booking: {
       enabled: true,

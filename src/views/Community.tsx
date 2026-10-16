@@ -6,6 +6,9 @@ import { Link, useNavigate, useParams } from "../routing";
 import { Heart, MessageCircle, PenLine, ArrowLeft, Trash2 } from "lucide-react";
 import { categories, send, useResource, useSite, type Post } from "../lib";
 import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components";
+import {PostContent,PostSummary,browserSignals} from '../CommunityImages';
+import {parseImageLinks,parsePostImages} from '../../shared/media.mjs';
+import {PostSourceDetails} from './PostSources';
 
 type PostDetail = Post & {
   liked: boolean;
@@ -18,7 +21,7 @@ export default function Community() {
 function Feed() {
   const { dateTime } = useFormatting();
   const copy = useCopy();
-  const { user } = useSite();
+  const { user, loading } = useSite();
   const navigate = useNavigate();
   const [category, setCategory] = useState("全部故事"),
     [page, setPage] = useState(1),
@@ -40,6 +43,7 @@ function Feed() {
         </div>
         <button
           className="button"
+          disabled={loading}
           onClick={() =>
             user ? setCompose(true) : navigate("/login?next=/community")
           }
@@ -73,6 +77,7 @@ function Feed() {
           </p>
           <button
             className="button outline"
+            disabled={loading}
             onClick={() =>
               user ? setCompose(true) : navigate("/login?next=/community")
             }
@@ -89,14 +94,12 @@ function Feed() {
               <div className="forum-post-body">
                 <div className="post-byline">
                   <strong>{p.author}</strong>
+                  <span className="post-author-id">{copy('注册 ID')} <bdi>{p.user_id}</bdi></span>
                   <time>{dateTime(p.created_at)}</time>
                   <span className="tag">{copy(p.category)}</span>
                 </div>
                 <h2>{p.title}</h2>
-                <p>
-                  {p.body.slice(0, 180)}
-                  {p.body.length > 180 ? "…" : ""}
-                </p>
+                <PostSummary body={p.body} images={p.images}/>
                 <div className="post-stats">
                   <span>
                     <Heart size={15} />
@@ -164,6 +167,8 @@ function Compose({
   const copy = useCopy();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [imageLinks,setImageLinks] = useState(''),[body,setBody] = useState('');
+  const images = parseImageLinks(imageLinks.split('\n').map(value=>value.trim()).filter(Boolean));
   async function publish(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
@@ -173,6 +178,8 @@ function Compose({
         title: data.get("title"),
         category: data.get("category"),
         body: data.get("body"),
+        images: imageLinks.split('\n').map(value=>value.trim()).filter(Boolean),
+        browserSignals: browserSignals(),
       });
       onDone(result.id);
     } catch (e) {
@@ -208,6 +215,8 @@ function Compose({
           {copy("分享内容")}
           <textarea
             name="body"
+            value={body}
+            onChange={event=>setBody(event.target.value)}
             minLength={5}
             maxLength={10000}
             rows={8}
@@ -217,8 +226,12 @@ function Compose({
             required
           />
         </label>
+        <label>{copy('图片链接（每行一张，最多 9 张）')}<textarea name="images" value={imageLinks} onChange={event=>setImageLinks(event.target.value)} rows={3} maxLength={20000} placeholder="https://…" /></label>
+        <p className="subtle-note">{copy('支持 HTTPS 图片直链、Markdown 和 BBCode。分享页请先复制图片原始地址。')}</p>
+        {(images.length>0 || parsePostImages(body).some(part=>part.type==='image')) && <details className="post-preview" open><summary>{copy('图片预览')}</summary><PostContent body={body} images={images}/></details>}
         <p className="subtle-note">
           {copy("帖子与回复将公开展示，请保护个人隐私。")}
+          {' '}{copy('作者注册 ID 公开展示；发布时记录 IP 与浏览器指纹，供管理员在 180 天内追溯。')}
         </p>
         <ErrorNotice error={error} />
         <button className="button full" disabled={busy}>
@@ -309,9 +322,11 @@ function Detail({ id }: { id: string }) {
         <div className="post-byline">
           <div className="post-avatar">{p.author.slice(0, 1)}</div>
           <strong>{p.author}</strong>
+          <span className="post-author-id">{copy('注册 ID')} <bdi>{p.user_id}</bdi></span>
           <time>{dateTime(p.created_at)}</time>
         </div>
-        <div className="post-content">{p.body}</div>
+        <PostContent body={p.body} images={p.images}/>
+        {user?.role==='admin' && <PostSourceDetails postId={p.id}/>}
         <div className="post-detail-actions">
           <button
             className={`button outline small ${p.liked ? "liked" : ""}`}

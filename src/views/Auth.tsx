@@ -1,4 +1,5 @@
 "use client";
+import {SiteImage} from '../MediaProvider';
 import { useCopy } from "../i18n";
 
 import { useState, type FormEvent } from "react";
@@ -56,7 +57,7 @@ export default function Auth() {
   return (
     <div className="auth-page">
       <div className="auth-art">
-        <img src="/images/wedding.jpg" alt={copy("浪漫婚纱影像灵感")} />
+        <SiteImage src="/images/wedding.jpg" alt={copy("浪漫婚纱影像灵感")} />
         <div>
           <span className="eyebrow">{copy("YOUR STORY BEGINS HERE")}</span>
           <h2>

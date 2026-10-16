@@ -1,0 +1,36 @@
+.post-author-id {font-size: 11px; overflow-wrap: anywhere; color: var(--muted);}
+.post-author-id bdi {font-family: monospace;}
+.post-byline {flex-wrap: wrap;}
+.forum-post-body {min-width: 0;}
+.post-thumbnails {display: flex; gap: 10px; margin-block: 12px;}
+.post-thumbnails img {width: min(30%,160px); aspect-ratio: 4/3; object-fit: cover; border-radius: 3px;}
+.community-image {margin: 1rem 0; white-space: normal; min-width: 0;}
+.community-image img {display: block; max-width: 100%; max-height: 760px; height: auto; margin-inline: auto; border-radius: 3px;}
+.community-image a {overflow-wrap: anywhere;}
+.post-image-grid {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-block: 24px;}
+.post-image-grid .community-image {margin: 0;}
+.post-image-grid img {width: 100%; aspect-ratio: 4/3; object-fit: contain; background: var(--paper);}
+.post-preview {border: 1px solid var(--line); padding: 14px; max-height: 420px; overflow: auto;}
+.post-preview summary,.post-trace summary {cursor: pointer; padding-block: 8px;}
+.post-preview .post-content {font-size: 14px; margin: 12px 0;}
+.post-preview .community-image img {max-height: 220px;}
+.post-trace {border-block: 1px solid var(--line); margin-block: 16px; padding: 8px;}
+.post-source-panel {text-align: start;}
+.post-source {padding-block: 20px; border-bottom: 1px solid var(--line);}
+.post-source h3 {overflow-wrap: anywhere;}
+.post-source dl {display: grid; grid-template-columns: minmax(100px,160px) minmax(0,1fr); gap: 12px; margin-block: 16px; font-size: 13px;}
+.post-source dt {color: var(--muted);}
+.post-source dd {margin: 0; overflow-wrap: anywhere;}
+.post-source small {display: block;}
+.source-search {margin-block: 20px;}
+.media-settings-grid {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px;}
+.media-settings-grid article {min-width: 0; border: 1px solid var(--line); padding: 16px; background: var(--surface);}
+.media-settings-grid img {width: 100%; aspect-ratio: 3/2; object-fit: cover; margin-bottom: 16px;}
+.media-settings-grid label {display: grid; gap: 8px;}
+.media-settings-grid input {min-width: 0; width: 100%;}
+.media-settings-grid .text-button {margin-top: 12px;}
+@media(max-width:640px) {
+  .media-settings-grid,.post-image-grid {grid-template-columns: minmax(0,1fr);}
+  .post-source dl {grid-template-columns: minmax(0,1fr); gap: 5px;}
+  .post-source dd {margin-bottom: 12px;}
+}

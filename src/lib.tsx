@@ -11,6 +11,9 @@ import {
 import { useLocale } from "next-intl";
 import { getPathname } from "../i18n/navigation";
 import { useCopy, localizeService } from "./i18n";
+import {useTheme} from "./ThemeProvider";
+import type {ThemeId} from "./themes";
+import {useMedia,type ImageMap} from './MediaProvider';
 
 export type User = {
   id: string;
@@ -35,6 +38,7 @@ export type Service = {
 };
 export type Booking = {
   id: string;
+  user_id: string;
   service_id: string;
   service_title: string;
   price: number;
@@ -82,6 +86,7 @@ export type Post = {
   comment_count: number;
   created_at: number;
   hidden?: number;
+  images: string[];
 };
 export type BookingConfig = {
   enabled: boolean;
@@ -98,8 +103,10 @@ export type SiteConfig = {
   hours: string;
   wechat: string;
   samplePricing: boolean;
+  defaultTheme?: ThemeId;
 };
 export type Settings = {
+  media: {images:ImageMap};
   site: SiteConfig;
   booking: BookingConfig;
   payment: { available: boolean; methods: string[] };
@@ -170,6 +177,8 @@ type Context = {
 const SiteContext = createContext<Context>(null!);
 export const useSite = () => useContext(SiteContext);
 export function SiteProvider({ children }: { children: ReactNode }) {
+  const {setSiteTheme} = useTheme();
+  const {setImages} = useMedia();
   const copy = useCopy(),
     locale = useLocale();
   const [user, setUser] = useState<User | null>(null),
@@ -189,11 +198,13 @@ export function SiteProvider({ children }: { children: ReactNode }) {
       ]);
       setServices(s);
       setSettings(config);
+      setSiteTheme(config.site.defaultTheme);
+      setImages(config.media?.images || {});
       setSiteError("");
     } catch (e) {
       setSiteError((e as Error).message);
     }
-  }, []);
+  }, [setSiteTheme,setImages]);
   useEffect(() => {
     api<{ installed: boolean }>("/install/status")
       .then(async (status) => {

@@ -13,11 +13,16 @@ export function useVisibleReceipt(
     if (!root || !enabled) return;
     const visible = new Set<HTMLElement>();
     let timer: ReturnType<typeof setTimeout>;
+    const canRead = () => {
+      const dialog = document.querySelector("dialog[open]");
+      return document.visibilityState === "visible" && document.hasFocus()
+        && (!dialog || dialog.contains(root));
+    };
     const flush = () => {
       clearTimeout(timer);
-      if (document.visibilityState !== "visible" || !document.hasFocus()) return;
+      if (!canRead()) return;
       timer = setTimeout(() => {
-        if (document.visibilityState === "visible" && document.hasFocus() && visible.size)
+        if (canRead() && visible.size)
           onVisible([...visible]);
       }, 200);
     };
@@ -52,6 +57,7 @@ export function useVisibleReceipt(
     const mutations = new MutationObserver(observeContent);
     mutations.observe(root, {childList: true, subtree: true, attributes: true, attributeFilter: ["data-receipt-id"]});
     document.addEventListener("visibilitychange", flush);
+    document.addEventListener("yifan-modal-change", flush);
     window.addEventListener("focus", flush);
     window.addEventListener("blur", flush);
     return () => {
@@ -59,6 +65,7 @@ export function useVisibleReceipt(
       observer.disconnect();
       mutations.disconnect();
       document.removeEventListener("visibilitychange", flush);
+      document.removeEventListener("yifan-modal-change", flush);
       window.removeEventListener("focus", flush);
       window.removeEventListener("blur", flush);
     };

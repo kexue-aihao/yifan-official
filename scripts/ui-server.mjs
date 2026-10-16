@@ -16,6 +16,7 @@ import { createRuntime } from "../server/install.mjs";
 process.env.SETTINGS_ENCRYPTION_KEY = randomBytes(32).toString("hex");
 const fixture = await createTestDatabase({ initialize: false });
 const directory = mkdtempSync(join(tmpdir(), "yifan-ui-"));
+process.env.YIFAN_DATA_DIR = directory;
 const runtime = await createRuntime({
   dataDir: directory,
   origin: "http://127.0.0.1:4174",

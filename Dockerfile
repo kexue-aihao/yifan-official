@@ -13,6 +13,7 @@ COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/next.config.mjs ./next.config.mjs
 COPY --from=build --chown=node:node /app/server ./server
+COPY --from=build --chown=node:node /app/shared ./shared
 COPY --from=build --chown=node:node /app/i18n ./i18n
 COPY --from=build --chown=node:node /app/scripts/create-admin.mjs ./scripts/create-admin.mjs
 COPY --from=build --chown=node:node /app/package.json ./package.json

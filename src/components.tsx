@@ -74,11 +74,13 @@ export function Modal({
   useEffect(() => {
     const d = ref.current!;
     d.showModal();
+    document.dispatchEvent(new Event("yifan-modal-change"));
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       d.close();
       document.body.style.overflow = previous;
+      document.dispatchEvent(new Event("yifan-modal-change"));
     };
   }, []);
   return (

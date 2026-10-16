@@ -3,6 +3,7 @@ import {
   scrypt,
   timingSafeEqual,
   createHash,
+  createHmac,
   createCipheriv,
   createDecipheriv,
 } from "node:crypto";
@@ -48,6 +49,9 @@ export function createVault(options = {}) {
   }
   const bytes = Buffer.from(key, "hex");
   return {
+    fingerprint(value) {
+      return createHmac('sha256', bytes).update('yifan:post-fingerprint:v1:').update(value).digest('hex');
+    },
     encrypt(value) {
       if (!value) return "";
       const iv = randomBytes(12);

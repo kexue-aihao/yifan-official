@@ -21,6 +21,7 @@ import {
 } from "./security.mjs";
 import { openDatabase, initializeDatabase, id, transaction } from "./db.mjs";
 import { createApp } from "./app.mjs";
+import {configureProxy} from './visitors.mjs';
 import {apiLocale, validationError} from "./i18n.mjs";
 
 const connectionSchema = z.object({
@@ -192,7 +193,7 @@ export async function createRuntime(options = {}) {
   const app = express();
   app.use(apiLocale);
   app.disable("x-powered-by");
-  if (process.env.TRUST_PROXY === "1") app.set("trust proxy", 1);
+  configureProxy(app);
   app.use("/api/install", express.json({ limit: "16kb" }), cookieParser());
   app.use("/api/install", (_req, res, next) => {
     res.set("Cache-Control", "no-store");

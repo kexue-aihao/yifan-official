@@ -59,6 +59,30 @@ export async function initializeDatabase(db) {
     await db.exec(statement);
   await seedDatabase(db);
   await migrateReadReceipts(db);
+  await migrateVisitors(db);
+  await migrateCommunity(db);
+}
+export async function migrateCommunity(db) {
+  const connection = await db.pool.getConnection();
+  let lockName;
+  try {
+    const [[row]] = await connection.query("SELECT CONCAT('yifan-community:', LEFT(SHA2(DATABASE(),256),40)) AS name");
+    lockName = row.name;
+    const [[lock]] = await connection.query('SELECT GET_LOCK(?,15) AS acquired',[lockName]);
+    if (lock.acquired !== 1) throw new Error('Could not acquire community schema lock');
+    const sql = await readFile(new URL('./community.sql', import.meta.url),'utf8');
+    for (const statement of sql.split(';').map(value => value.trim()).filter(Boolean)) await connection.query(statement);
+    const [[column]] = await connection.query("SELECT CHARACTER_MAXIMUM_LENGTH AS size FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='services' AND COLUMN_NAME='image'");
+    if (Number(column.size) < 2048) await connection.query('ALTER TABLE services MODIFY image VARCHAR(2048) NOT NULL');
+    await connection.query("INSERT IGNORE INTO settings(setting_key,value) VALUES ('media',?)", [JSON.stringify({images:{}})]);
+  } finally {
+    if (lockName) await connection.query('SELECT RELEASE_LOCK(?)',[lockName]).catch(() => {});
+    connection.release();
+  }
+}
+export async function migrateVisitors(db) {
+  const sql = await readFile(new URL('./visitor-audit.sql', import.meta.url), 'utf8');
+  for (const statement of sql.split(';').map(s => s.trim()).filter(Boolean)) await db.exec(statement);
 }
 // Additive upgrade for installed sites; never recreate business data or infer
 // historical reads. A connection-scoped lock serializes concurrent startups.
@@ -109,5 +133,8 @@ export async function maintenance(db, now = Date.now()) {
       .prepare("DELETE FROM messages WHERE created_at<=?")
       .run(now - 180 * 86400000);
     await db.prepare("DELETE FROM sessions WHERE expires_at<=?").run(now);
+    await db.prepare('DELETE FROM visitor_events WHERE created_at<=?').run(now - 180 * 86400000);
+    await db.prepare('DELETE FROM post_sources WHERE created_at<=?').run(now - 180 * 86400000);
+    await db.prepare('DELETE g FROM visitor_ips g LEFT JOIN visitor_events e ON e.ip=g.ip WHERE e.id IS NULL AND g.resolved_at<=?').run(now - 180 * 86400000);
   });
 }

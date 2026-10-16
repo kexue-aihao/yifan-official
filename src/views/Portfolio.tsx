@@ -1,10 +1,12 @@
 "use client";
+import {SiteImage} from '../MediaProvider';
 import { useCopy } from "../i18n";
 
 import { useState } from "react";
 import { Link, useSearchParams } from "../routing";
 import { Plus } from "lucide-react";
 import { Arrow, Modal } from "../components";
+import {useTheme} from '../ThemeProvider';
 
 const works = [
   {
@@ -66,11 +68,12 @@ const works = [
 ];
 export default function Portfolio() {
   const copy = useCopy();
+  const {theme}=useTheme();
   const [params] = useSearchParams();
   const [filter, setFilter] = useState(params.get("category") || "全部灵感");
   const [selected, setSelected] = useState<(typeof works)[number] | null>(null);
   return (
-    <div className="page container">
+    <div className={`page container portfolio-page portfolio-${theme}`}>
       <div className="page-title">
         <span className="eyebrow">{copy("A CURATED WORLD OF YI FAN")}</span>
         <h1>{copy("在光影里，看见心动。")}</h1>
@@ -92,24 +95,28 @@ export default function Portfolio() {
           </button>
         ))}
       </div>
-      <div className="gallery-grid">
+      <div className={`gallery-grid gallery-${theme}`} data-layout={`gallery-${theme}`}>
         {works
           .filter((w) => filter === "全部灵感" || w.category === filter)
-          .map((w) => (
+          .map((w,i) => (
             <button
               className="gallery-item"
               key={w.title}
               onClick={() => setSelected(w)}
             >
+              {theme==='sage'&&<span className="gallery-index">FIG. {String(i+1).padStart(3,'0')} / {copy(w.category)}</span>}
+              {theme==='noir'&&<div className="gallery-editorial-head"><span>0{i+1}</span><h2>{copy(w.title)}</h2></div>}
               <div className="image-wrap">
-                <img src={w.image} alt={copy(w.title)} loading="lazy" />
+                <SiteImage src={w.image} alt={copy(w.title)} loading="lazy" />
                 <span className="gallery-plus">
                   <Plus size={22} />
                 </span>
               </div>
               <div>
-                <h2>{copy(w.title)}</h2>
+                {theme!=='noir'&&<h2>{copy(w.title)}</h2>}
                 <span>{copy(w.en)}</span>
+                {theme==='rose'&&<p>{copy(w.text)}</p>}
+                {theme==='noir'&&<span className="gallery-category">{copy(w.category)}<Plus size={18}/></span>}
               </div>
             </button>
           ))}
@@ -125,7 +132,7 @@ export default function Portfolio() {
           title={copy(selected.title)}
           onClose={() => setSelected(null)}
         >
-          <img
+          <SiteImage
             className="lightbox-image"
             src={selected.image}
             alt={copy(selected.title)}

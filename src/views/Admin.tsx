@@ -1,4 +1,5 @@
 "use client";
+import {SiteImage} from '../MediaProvider';
 import {
   useCopy,
   useFormatting,
@@ -21,6 +22,7 @@ import {
   Eye,
   EyeOff,
   Check,
+  Globe,
 } from "lucide-react";
 import {
   useSite,
@@ -37,6 +39,11 @@ import {
 import { Empty, ErrorNotice, Loading, Modal } from "../components";
 import { ConversationView } from "./Chat";
 import {useVisibleReceipt} from "../useVisibleReceipt";
+import {ThemeChoices} from "../ThemeSwitcher";
+import {isTheme, defaultTheme, type ThemeId} from "../themes";
+import Visitors,{AccessHistory} from './Visitors';
+import MediaSettings from './MediaSettings';
+import {PostSourceDetails} from './PostSources';
 
 type AdminSettings = {
   site: SiteConfig;
@@ -54,8 +61,10 @@ const tabs = [
   { id: "overview", label: "经营概览", icon: BarChart3 },
   { id: "bookings", label: "预约管理", icon: CalendarDays },
   { id: "services", label: "定制服务", icon: Images },
+  { id: "media", label: "站点图片", icon: Images },
   { id: "schedule", label: "档期设置", icon: Clock3 },
   { id: "inbox", label: "客服收件箱", icon: MessageCircle },
+  { id: "visitors", label: "访问与 IP", icon: Globe },
   { id: "posts", label: "社区管理", icon: MessagesSquare },
   { id: "settings", label: "品牌与支付", icon: Settings2 },
 ];
@@ -370,7 +379,7 @@ export default function Admin() {
               <div className="admin-services">
                 {services.data?.map((s) => (
                   <article key={s.id}>
-                    <img src={s.image} alt="" />
+                    <SiteImage src={s.image} alt="" />
                     <div>
                       <h3>
                         {serviceTitle(s.id, s.title)}
@@ -422,6 +431,8 @@ export default function Admin() {
         {tab === "settings" &&
           (settings.data ? (
             <div className="settings-sections">
+              <AppearanceForm config={settings.data.site} busy={busy}
+                onSave={value => void action(() => saveConfig("site", value), copy("品牌主题已更新"))} />
               <SiteForm
                 config={settings.data.site}
                 busy={busy}
@@ -476,18 +487,21 @@ export default function Admin() {
             </div>
             <div className="inbox-conversation">
               {currentThread ? (
-                <ConversationView
+                <><details className="conversation-access"><summary>{copy('用户与访问记录')}</summary><p>{copy('注册 ID')}：<code>{threads.data?.find(t=>t.id===currentThread)?.user_id}</code></p><AccessHistory key={currentThread} query={`conversationId=${currentThread}`}/></details><ConversationView
                   key={currentThread}
                   threadId={currentThread}
-                />
+                /></>
               ) : (
                 <Empty title={copy("在这里，认真回应每一份期待。")} />
               )}
             </div>
           </div>
         )}
+        {tab === 'visitors'&&<Visitors/>}
+        {tab === 'media'&&<MediaSettings/>}
         {tab === "posts" && (
           <>
+            <PostSourceDetails/>
             {posts.loading ? (
               <Loading />
             ) : !posts.data?.length ? (
@@ -510,6 +524,8 @@ export default function Admin() {
                       {p.author} · {dateTime(p.created_at)} ·{" "}
                       {copy(countMessages.replies, { count: p.comment_count })}
                     </p>
+                    <p className="post-author-id">{copy('注册 ID')} <bdi>{p.user_id}</bdi></p>
+                    <PostSourceDetails postId={p.id} label="查看发布来源"/>
                     <button
                       className="button outline small"
                       disabled={busy}
@@ -585,6 +601,8 @@ function BookingDetails({booking, onClose, onViewed}: {
         <p>{money(booking.deposit)} / {money(booking.price)}</p>
         {booking.note && <p className="booking-note">{booking.note}</p>}
         <p className="booking-read-status">{viewed ? copy("工作人员已查看") : copy("待工作人员查看")}</p>
+        <p>{copy('注册 ID')}：<code>{booking.user_id}</code></p>
+        <details><summary>{copy('用户与访问记录')}</summary><AccessHistory query={`bookingId=${booking.id}`}/></details>
         <ErrorNotice error={error} />
       </div>
     </Modal>
@@ -742,7 +760,8 @@ function ServiceForm({
         </label>
         <label>
           {copy("展示配图")}
-          <select name="image" defaultValue={s.image}>
+          <input name="image" list="service-image-options" defaultValue={s.image} maxLength={2048} required />
+          <datalist id="service-image-options">
             {[
               "wedding",
               "celebration",
@@ -764,8 +783,9 @@ function ServiceForm({
                 )}
               </option>
             ))}
-          </select>
+          </datalist>
         </label>
+        <p className="subtle-note">{copy('选择默认配图，或粘贴 HTTPS 图片直链。默认配图跟随站点图片设置。')}</p>
         <div className="form-row">
           <label className="checkbox-label">
             <input type="checkbox" name="active" defaultChecked={s.active} />
@@ -906,6 +926,24 @@ function ScheduleForm({
     </form>
   );
 }
+function AppearanceForm({config, busy, onSave}: {
+  config: SiteConfig; busy: boolean; onSave: (value: SiteConfig) => void;
+}) {
+  const copy = useCopy();
+  const [value, setValue] = useState<ThemeId>(isTheme(config.defaultTheme) ? config.defaultTheme : defaultTheme);
+  useEffect(() => setValue(isTheme(config.defaultTheme) ? config.defaultTheme : defaultTheme), [config.defaultTheme]);
+  return (
+    <form className="form settings-form appearance-form" onSubmit={event => {
+      event.preventDefault();
+      onSave({...config, defaultTheme: value});
+    }}>
+      <h3>{copy("品牌主题")}</h3>
+      <p className="subtle-note">{copy("选择新访客看到的默认主题。访客仍可在页头切换自己喜欢的色调。")}</p>
+      <ThemeChoices value={value} onChange={setValue} />
+      <button className="button" disabled={busy}>{busy ? copy("保存中…") : copy("保存品牌主题")}</button>
+    </form>
+  );
+}
 function SiteForm({
   config,
   busy,
@@ -925,6 +963,7 @@ function SiteForm({
       hours: String(d.get("hours")),
       wechat: String(d.get("wechat")),
       samplePricing: d.get("sample") === "on",
+      defaultTheme: config.defaultTheme || defaultTheme,
     });
   }
   return (

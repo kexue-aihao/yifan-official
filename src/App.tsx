@@ -16,6 +16,8 @@ import { Loading } from "./components";
 import Chat from "./views/Chat";
 import { MotionConfig } from "motion/react";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeSwitcher from "./ThemeSwitcher";
+import VisitTracker from './VisitTracker';
 
 function Brand() {
   const copy = useCopy();
@@ -76,6 +78,7 @@ export default function App({ children }: { children: React.ReactNode }) {
   }, [location.pathname, location.hash]);
   return (
     <MotionConfig reducedMotion="user">
+      <VisitTracker/>
       <a href="#main" className="skip-link">
         {copy("跳至主要内容")}
       </a>
@@ -95,6 +98,7 @@ export default function App({ children }: { children: React.ReactNode }) {
             <Link to="/#our-story">{copy("关于壹梵")}</Link>
           </nav>
           <div className="header-actions">
+            <ThemeSwitcher />
             <LanguageSwitcher />
             {user ? (
               <>

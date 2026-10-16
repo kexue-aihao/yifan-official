@@ -1,4 +1,5 @@
 "use client";
+import {SiteImage,useImageSource} from '../MediaProvider';
 import { useCopy } from "../i18n";
 
 import { useRef, useState } from "react";
@@ -12,6 +13,8 @@ import {
 import { ArrowDown, ArrowUpRight, ChevronRight } from "lucide-react";
 import { Link } from "../routing";
 import { useSite } from "../lib";
+import {useTheme} from '../ThemeProvider';
+import ThemeHome from './ThemeHomes';
 
 const scenes = [
   {
@@ -37,6 +40,11 @@ const scenes = [
   },
 ];
 export default function Home() {
+  const {theme}=useTheme();
+  return theme==='ivory'?<CinematicHome/>:<ThemeHome/>;
+}
+function CinematicHome() {
+  const imageSource = useImageSource();
   const copy = useCopy();
   const { services, openChat } = useSite();
   const [scene, setScene] = useState(0),
@@ -57,7 +65,7 @@ export default function Home() {
     selected = services[serviceIndex] || services[0];
   return (
     <>
-      <section
+      <section data-layout="cinematic-narrative"
         className="cinema"
         ref={ref}
         aria-label={copy("壹梵婚纱与定制影像")}
@@ -67,7 +75,8 @@ export default function Home() {
             <motion.img
               className="hero-image"
               key={sceneData.image}
-              src={sceneData.image}
+              src={imageSource(sceneData.image)}
+              referrerPolicy="no-referrer"
               alt={copy("{v0}风格示意", { v0: sceneData.description })}
               style={{ objectPosition: sceneData.position }}
               initial={{ opacity: 0, scale: reduced ? 1 : 1.08 }}
@@ -195,7 +204,7 @@ export default function Home() {
       <section className="image-essay container" aria-label={copy("影像灵感")}>
         <Link to="/portfolio?category=婚纱影像" className="essay-main">
           <div className="essay-image">
-            <img
+            <SiteImage
               src="/images/wedding.jpg"
               loading="lazy"
               alt={copy("海边婚纱影像风格示意")}
@@ -214,7 +223,7 @@ export default function Home() {
           </span>
           <Link to="/portfolio?category=个人写真">
             <div className="essay-image">
-              <img
+              <SiteImage
                 src="/images/portrait.jpg"
                 loading="lazy"
                 alt={copy("自然光个人写真风格示意")}
@@ -292,7 +301,7 @@ export default function Home() {
                     exit={{ opacity: 0, x: reduced ? 0 : -18 }}
                     transition={{ duration: 0.35 }}
                   >
-                    <img
+                    <SiteImage
                       src={selected.image}
                       alt={copy("{v0}风格示意", { v0: selected.title })}
                       loading="lazy"
@@ -316,7 +325,7 @@ export default function Home() {
       </section>
       <section className="atelier-story container" id="our-story">
         <div className="atelier-story-photo">
-          <img
+          <SiteImage
             src="/images/dress.jpg"
             alt={copy("婚纱礼服风格灵感")}
             loading="lazy"

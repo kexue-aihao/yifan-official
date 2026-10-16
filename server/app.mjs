@@ -4,8 +4,12 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import { z, ZodError } from "zod";
-import { openDatabase, id, transaction, maintenance, migrateReadReceipts } from "./db.mjs";
+import { openDatabase, id, transaction, maintenance, migrateReadReceipts, migrateVisitors, migrateCommunity } from "./db.mjs";
+import {configureProxy, createVisitorAudit, visitorRoutes} from './visitors.mjs';
+import {browserSignalsSchema, postImagesSchema, publicationSource, postSourceRoutes} from './community.mjs';
+import {imageSlots, siteImageURL, parsePostImages, MAX_POST_IMAGES} from '../shared/media.mjs';
 import {apiLocale, validationError} from "./i18n.mjs";
+import {themeIds} from "./appearance.mjs";
 import {
   hashPassword,
   verifyPassword,
@@ -36,14 +40,7 @@ const serviceSchema = z
     deposit: z.number().int().min(1),
     duration: text(1, 60),
     features: z.array(text(1, 100)).min(1).max(10),
-    image: z.enum([
-      "/images/wedding.jpg",
-      "/images/celebration.jpg",
-      "/images/portrait.jpg",
-      "/images/dress.jpg",
-      "/images/beauty.jpg",
-      "/images/cosplay.jpg",
-    ]),
+    image: z.string().trim().max(2048).refine(value => !!siteImageURL(value), '请输入有效的 HTTPS 图片链接'),
     active: z.boolean(),
     featured: z.boolean(),
     sort_order: z.number().int().min(0).max(100),
@@ -74,7 +71,12 @@ const siteSchema = z.object({
   hours: text(1, 100),
   wechat: z.string().max(80),
   samplePricing: z.boolean(),
+  defaultTheme: z.enum(themeIds).optional(),
 });
+const mediaSchema = z.object({images: z.object(Object.fromEntries(
+  imageSlots.map(slot => [slot, z.string().trim().max(2048).refine(value => !!siteImageURL(value), '请输入有效的 HTTPS 图片链接').optional()]),
+)).strict()}).strict();
+const asPost = row => ({...row, images: row.images ? JSON.parse(row.images) : []});
 const epaySchema = z.object({
   enabled: z.boolean(),
   gateway: z.string().max(300),
@@ -106,6 +108,9 @@ const chinaNow = () =>
 export async function createApp(options = {}) {
   const db = options.db || (await openDatabase());
   await migrateReadReceipts(db);
+  await migrateVisitors(db);
+  await migrateCommunity(db);
+  const recordVisit = createVisitorAudit(db);
   const vault = options.vault || createVault();
   const origin =
     options.origin || process.env.APP_ORIGIN || "http://localhost:5173";
@@ -182,7 +187,7 @@ export async function createApp(options = {}) {
     return csrf;
   };
   app.disable("x-powered-by");
-  if (process.env.TRUST_PROXY === "1") app.set("trust proxy", 1);
+  configureProxy(app);
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -190,7 +195,7 @@ export async function createApp(options = {}) {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:"],
+          imgSrc: ["'self'", "data:", "https:"],
           connectSrc: ["'self'"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
@@ -261,6 +266,12 @@ export async function createApp(options = {}) {
     message: { error: "操作频繁，请稍等片刻" },
   });
   app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+  app.post('/api/visits', writeLimit, async (req,res) => {
+    const input = z.object({eventId:z.uuid(),path:z.string().max(256).regex(/^\/(?!\/)[^?#\s]*$/)}).parse(req.body);
+    try { await recordVisit(req,'page',input); }
+    catch (error) { if (error.code !== 'ER_DUP_ENTRY') throw error; }
+    res.status(202).json({ok:true});
+  });
   app.get("/api/auth/me", (req, res) =>
     res.json({ user: publicUser(req.user), csrf: req.user?.csrf || null }),
   );
@@ -285,6 +296,8 @@ export async function createApp(options = {}) {
       if (error.code === "ER_DUP_ENTRY") fail(409, "该邮箱已注册，请登录");
       throw error;
     }
+    req.user=user;
+    await recordVisit(req,'register');
     res.status(201).json({ user, csrf: await loginSession(user, res) });
   });
   app.post("/api/auth/login", authLimit, async (req, res) => {
@@ -301,6 +314,8 @@ export async function createApp(options = {}) {
       await db
         .prepare("DELETE FROM sessions WHERE token_hash=?")
         .run(req.user.token_hash);
+    req.user=user;
+    await recordVisit(req,'login');
     res.json({ user: publicUser(user), csrf: await loginSession(user, res) });
   });
   app.post("/api/auth/logout", auth, async (req, res) => {
@@ -317,6 +332,7 @@ export async function createApp(options = {}) {
     const epay = await setting("epay");
     res.json({
       site: await setting("site"),
+      media: await setting("media"),
       booking: await setting("booking"),
       payment: {
         available: !!(epay.enabled && epay.gateway && epay.pid && epay.secret),
@@ -438,6 +454,8 @@ export async function createApp(options = {}) {
           "INSERT INTO conversations(id,user_id,booking_id,created_at) VALUES (?,?,?,?)",
         )
         .run(id(), req.user.id, bookingId, now);
+      const conversation = await db.prepare('SELECT id FROM conversations WHERE booking_id=?').get(bookingId);
+      await recordVisit(req,'booking',{bookingId,conversationId:conversation.id});
       return {
         booking: await db
           .prepare("SELECT * FROM bookings WHERE id=?")
@@ -683,6 +701,7 @@ export async function createApp(options = {}) {
         )
         .get(req.user.id, input.bookingId || null);
     }
+    await recordVisit(req,'conversation',{bookingId:thread.booking_id,conversationId:thread.id});
     res.json(thread);
   });
   app.get("/api/conversations/:id/messages", auth, async (req, res) => {
@@ -739,11 +758,14 @@ export async function createApp(options = {}) {
       const thread = await threadOwner(req, req.params.id);
       const { body } = z.object({ body: text(1, 2000) }).parse(req.body);
       const messageId = id();
+      await transaction(db, async () => {
       await db
         .prepare(
           "INSERT INTO messages(id,conversation_id,sender_id,body,created_at) VALUES (?,?,?,?,?)",
         )
         .run(messageId, thread.id, req.user.id, body, Date.now());
+      await recordVisit(req,'message',{bookingId:thread.booking_id,conversationId:thread.id,messageId});
+      });
       emit([thread.user_id, ...(await admins())], {
         type: "message",
         conversationId: thread.id,
@@ -751,7 +773,7 @@ export async function createApp(options = {}) {
       res.status(201).json({ id: messageId });
     },
   );
-  const postSelect = `SELECT p.*,u.name AS author,(SELECT COUNT(*) FROM comments WHERE post_id=p.id) AS comment_count,(SELECT COUNT(*) FROM likes WHERE post_id=p.id) AS like_count FROM posts p JOIN users u ON u.id=p.user_id`;
+  const postSelect = `SELECT p.*,u.name AS author,m.images,(SELECT COUNT(*) FROM comments WHERE post_id=p.id) AS comment_count,(SELECT COUNT(*) FROM likes WHERE post_id=p.id) AS like_count FROM posts p JOIN users u ON u.id=p.user_id LEFT JOIN post_media m ON m.post_id=p.id`;
   app.get("/api/posts", async (req, res) => {
     const page = z.coerce
       .number()
@@ -775,7 +797,7 @@ export async function createApp(options = {}) {
         .prepare(`SELECT COUNT(*) AS n FROM posts p ${where}`)
         .get(...args)
     ).n;
-    res.json({ posts, total: Number(total), page, pageSize: 12 });
+    res.json({ posts: posts.map(asPost), total: Number(total), page, pageSize: 12 });
   });
   app.post("/api/posts", auth, writeLimit, async (req, res) => {
     const input = z
@@ -783,9 +805,16 @@ export async function createApp(options = {}) {
         title: text(2, 100),
         body: text(5, 10000),
         category: z.enum(categories),
+        images: postImagesSchema,
+        browserSignals: browserSignalsSchema.optional(),
       })
       .parse(req.body);
     const postId = id();
+    const inlineImages = parsePostImages(input.body).filter(part => part.type === 'image');
+    if (inlineImages.length + input.images.length > MAX_POST_IMAGES) fail(400, '每篇帖子最多 9 张图片');
+    const source = publicationSource(req,input,vault);
+    const createdAt = Date.now();
+    await transaction(db, async () => {
     await db
       .prepare(
         "INSERT INTO posts(id,user_id,title,body,category,created_at) VALUES (?,?,?,?,?,?)",
@@ -796,8 +825,12 @@ export async function createApp(options = {}) {
         input.title,
         input.body,
         input.category,
-        Date.now(),
+        createdAt,
       );
+    await db.prepare('INSERT INTO post_media(post_id,images) VALUES (?,?)').run(postId,JSON.stringify(input.images));
+    await db.prepare(`INSERT INTO post_sources(post_id,user_id,ip,fingerprint,fingerprint_version,fingerprint_quality,browser_signals,user_agent,accept_language,client_hints,location,content_hash,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(postId,req.user.id,source.ip,source.fingerprint,source.fingerprint_version,source.fingerprint_quality,source.browser_signals,source.user_agent,source.accept_language,source.client_hints,source.location,source.content_hash,createdAt);
+    });
     res.status(201).json({ id: postId });
   });
   app.get("/api/posts/:id", async (req, res) => {
@@ -824,7 +857,7 @@ export async function createApp(options = {}) {
       )
       .all(post.id, (page - 1) * 50);
     res.json({
-      ...post,
+      ...asPost(post),
       liked,
       comments,
       commentPage: page,
@@ -875,6 +908,8 @@ export async function createApp(options = {}) {
     res.json({ liked: !existing });
   });
   app.use("/api/admin", admin);
+  visitorRoutes(app,db);
+  postSourceRoutes(app,db);
   app.get("/api/admin/overview", async (_req, res) => {
     await maintenance(db);
     res.json({
@@ -1021,6 +1056,7 @@ export async function createApp(options = {}) {
     const epay = await setting("epay");
     res.json({
       site: await setting("site"),
+      media: await setting("media"),
       booking: await setting("booking"),
       epay: { ...epay, secret: "", hasSecret: !!epay.secret },
     });
@@ -1028,7 +1064,12 @@ export async function createApp(options = {}) {
   app.put("/api/admin/settings/:key", async (req, res) => {
     const key = req.params.key;
     let input;
-    if (key === "site") input = siteSchema.parse(req.body);
+    if (key === "site") {
+      input = siteSchema.parse(req.body);
+      // Older clients saving contact details must preserve the chosen appearance.
+      input.defaultTheme ??= (await setting("site")).defaultTheme || "ivory";
+    }
+    else if (key === "media") input = mediaSchema.parse(req.body);
     else if (key === "booking") input = bookingSettingsSchema.parse(req.body);
     else if (key === "epay") {
       input = epaySchema.parse(req.body);
@@ -1063,9 +1104,9 @@ export async function createApp(options = {}) {
   });
   app.get("/api/admin/posts", async (_req, res) =>
     res.json(
-      await db
+      (await db
         .prepare(`${postSelect} ORDER BY p.created_at DESC LIMIT 300`)
-        .all(),
+        .all()).map(asPost),
     ),
   );
   app.patch("/api/admin/posts/:id", async (req, res) => {

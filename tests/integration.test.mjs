@@ -633,6 +633,20 @@ test("壹梵 API：完整业务及权限回归", async (t) => {
       404,
     );
   });
+  await t.test("品牌主题仅管理员可设置，验证方案、保存持久化且兼容旧客户端", async () => {
+    const site = (await admin.req("/admin/settings")).data.site;
+    assert.equal((await alice.req("/admin/settings/site", "PUT", {...site, defaultTheme: "noir"})).status, 403);
+    assert.equal((await admin.req("/admin/settings/site", "PUT", {...site, defaultTheme: "unknown-theme"})).status, 400);
+    for (const defaultTheme of ["ivory", "rose", "sage", "noir"]) {
+      assert.equal((await admin.req("/admin/settings/site", "PUT", {...site, defaultTheme})).status, 200);
+      assert.equal((await alice.req("/settings")).data.site.defaultTheme, defaultTheme);
+      assert.equal(JSON.parse((await db.prepare("SELECT value FROM settings WHERE setting_key='site'").get()).value).defaultTheme, defaultTheme);
+    }
+    const {defaultTheme: _oldTheme, ...legacySite} = site;
+    assert.equal((await admin.req("/admin/settings/site", "PUT", legacySite)).status, 200);
+    assert.equal((await alice.req("/settings")).data.site.defaultTheme, "noir");
+    await admin.req("/admin/settings/site", "PUT", {...site, defaultTheme: "ivory"});
+  });
   await t.test("套餐编辑、档期输入校验及退出后会话失效", async () => {
     assert.equal(
       (

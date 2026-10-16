@@ -16,7 +16,7 @@ export default function Legal() {
       <span className="eyebrow">{copy("CARE IN EVERY DETAIL")}</span>
       <h1>{privacy ? copy("隐私说明") : copy("预约须知")}</h1>
       <p className="subtle-note">
-        {t("updated", { date: date("2026-10-15") })}
+        {t("updated", { date: date("2026-10-16") })}
       </p>
       {privacy ? (
         <>
@@ -27,6 +27,10 @@ export default function Legal() {
             )}
           </p>
           <h2>{copy("会话与社区")}</h2>
+          <p>{copy('作者注册 ID 公开展示；发布时记录 IP 与浏览器指纹，供管理员在 180 天内追溯。')}</p>
+          <p>{copy('指纹使用浏览器语言、时区、平台、屏幕和请求信息生成，不采集画布或音频。浏览器信号可变更或伪造，不能作为身份认定的唯一依据。')}</p>
+          <p>{copy('社区和站点外链图片由浏览器访问图床，图床会接收网络 IP。本站不发送页面来源地址。')}</p>
+          <p>{copy('为履行预约、客服沟通及访问统计，我们记录注册 ID、访问 IP、IP 估算归属地和访问次数，并关联预约与会话。访问明细保留 180 天，仅授权管理员可见；IP 归属地不代表精确位置。')}</p>
           <p>
             {copy(
               "客服与预约专属会话仅对会话所属顾客与管理员可见。消息自发送起保存 180 天，超过期限将不再展示并自动清理。社区帖子、称呼和回复公开可见；帖子可由发布者删除，违规内容可被管理员隐藏。",
