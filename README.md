@@ -17,7 +17,7 @@ Vue 3 Composition API / Vue Router / TypeScript / Vite SSR / Motion for Vue 前�
 社区支持 HTTPS 图床直链、Markdown / BBCode 图片语法、附件预览及每帖最多9张图片；列表和详情公开作者注册 ID。后台“社区管理 → 发布来源追溯”可按帖子/注册ID/IP/指纹查找发布时来源，仅管理员可查看，保存180天。指纹只用于辅助关联，不能证明自然人身份。后台“站点图片”统一替换8处示例图并应用到各主题和默认套餐，“定制服务”也可单独设置配图外链。升级启动自动添加表，无需重新安装；操作与API详见本地 docs/local/community-media.md。
 
 1. 准备 Node.js 24 和 MySQL 8.0+。**在部署前创建独立的空数据库**及专用账号；数据库字符集必须为 utf8mb4。应用不会创建数据库。
-2. `npm install`，复制 `.env.example` 为 `.env`，设置访问地址 `APP_ORIGIN`。
+2. 生产构建使用 `npm ci --include=dev`，复制 `.env.example` 为 `.env`，设置访问地址 `APP_ORIGIN`。
 3. 开发运行 `npm run dev`，访问 http://localhost:5173/install。生产运行方式见下文。
 4. 从服务器 `data/install.key` 读取首次安装密钥，在安装页输入。
 5. 输入 MySQL 主机、端口、已创建的库名、用户名和密码。可启用验证服务器证书的 TLS。服务器实际连接核实库名、版本、字符集及创建/索引/读写/删除权限；校验通过才能进入下一步。
@@ -50,7 +50,14 @@ Node 同时提供 Vue SSR 页面、静态资源与 API。将正式域名 HTTPS �
 
 `data/installation.json` 保存加密 MySQL 连接配置，`data/settings.key` 为自动生成的加密密钥。也可在首次启动前设置固定的 64 位十六进制 `SETTINGS_ENCRYPTION_KEY`。**将配置文件、密钥与 MySQL 数据配套备份，安装后不可随意更换密钥。** 数据目录必须可写且不能作为静态目录对外提供。数据库短暂故障不会重新开放安装。
 
-Dockerfile 使用 Vite 的客户端与服务端构建产物，运行时挂载 `/app/data` 并连接事先创建的外部 MySQL。当前环境没有 Docker，未执行镜像部署验证。
+## 面板部署
+
+生产部署只提供两套面板路径：
+
+- [aaPanel 部署指南](docs/deploy-aapanel.md)：Node Project/PM2、MySQL、Nginx 反向代理与 HTTPS。
+- [AcePanel 部署指南](docs/deploy-acepanel.md)：Node 应用进程、MySQL、Nginx 反向代理与 HTTPS。
+
+两份指南均包含首次 `/install`、安装后锁定页面、SSE 长连接、备份更新和故障排查。面板菜单可能随版本变化，但 Node 版本、工作目录、端口和代理要求不变。
 
 初始管理员在安装页创建。后续可运行 `npm run admin:create` 添加独立管理员；不会将已存在的普通账号提权。
 
@@ -71,7 +78,7 @@ npm run test:ui
 
 ## 文档与营业配置
 
-完整 API / OpenAPI、数据库安装与部署说明、网站设计计划、Skill 清单均位于 **docs/local/**。该目录及 artifacts/ 通过本仓库 .git/info/exclude 本地排除，按要求不提交。
+开发期 API / OpenAPI、设计计划和验证记录保存在本地 `docs/local/`（该目录通过 `.git/info/exclude` 排除，不作为发布部署文档）。可发布的面板部署说明位于 `docs/deploy-aapanel.md` 和 `docs/deploy-acepanel.md`。
 
 图片为 Unsplash 风格示意，价格为示例；正式营业前在后台设置实际资料并替换有权使用的影像。Epay 兼容传统 submit.php / MD5 协议；回调验签和金额校验已实现，正式收款仍需实际商户联调。退款为人工处理。
 

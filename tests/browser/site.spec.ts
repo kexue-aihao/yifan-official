@@ -88,8 +88,9 @@ test("首次访问 /install：真实数据库校验通过才允许配置管理�
   await page.getByLabel("确认密码", { exact: true }).fill("BrowserAdmin123!");
   await page.getByRole("button", { name: "完成安装", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "壹梵，已准备就绪。" }),
+    page.getByRole("heading", { name: "网站已完成安装" }),
   ).toBeVisible({ timeout: 90000 });
+  await expect(page.getByLabel("安装密钥", { exact: true })).toHaveCount(0);
   await page.goto("/install");
   await expect(
     page.getByRole("heading", { name: "网站已完成安装" }),

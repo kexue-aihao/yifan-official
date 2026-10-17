@@ -147,11 +147,7 @@ const Install = defineComponent(
                     <span class="success-seal">
                       <Check />
                     </span>
-                    <h2>
-                      {step.value === 3
-                        ? copy("壹梵，已准备就绪。")
-                        : copy("网站已完成安装")}
-                    </h2>
+                    <h2>{copy("网站已完成安装")}</h2>
                     <p>
                       {copy(
                         "安装入口已锁定。你可以登录管理后台，设置服务、预约时段与在线支付。",
@@ -455,6 +451,7 @@ const Install = defineComponent(
                                   ...v,
                                   password: "",
                                 }))(database.value);
+                                installed.value = true;
                                 step.value = 3;
                               });
                             }}
