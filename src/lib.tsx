@@ -1,25 +1,28 @@
-"use client";
 import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { useLocale } from "next-intl";
-import { getPathname } from "../i18n/navigation";
-import { useCopy, localizeService } from "./i18n";
-import {useTheme} from "./ThemeProvider";
-import type {ThemeId} from "./themes";
-import {useMedia,type ImageMap} from './MediaProvider';
-
+  inject,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  reactive,
+  ref,
+  toValue,
+  watch,
+  type InjectionKey,
+  type MaybeRefOrGetter,
+} from "vue";
+import { useRouter } from "vue-router";
+import { localizeService, useCopy } from "./i18n";
+import { useMedia, type ImageMap } from "./MediaProvider";
+import { localizedPath, stripLocale } from "./routing";
+import { useTheme } from "./ThemeProvider";
+import type { ThemeId } from "./themes";
 export type User = {
   id: string;
   name: string;
   email: string;
   role: "customer" | "admin";
+  staffTitle?: string | null;
+  staffRole?: "owner" | "staff" | null;
 };
 export type Service = {
   id: string;
@@ -65,12 +68,35 @@ export type Thread = {
   service_id?: string;
   day: string | null;
   last_message: string | null;
+  assignee_id: string | null;
+  assignee_name: string | null;
+  assignee_title: string | null;
+};
+export type StaffMember = {
+  id: string;
+  email: string;
+  name: string;
+  display_name: string;
+  title: string;
+  active: number;
+  sort_order: number;
+};
+export type CustomerUser = {
+  id: string;
+  email: string;
+  name: string;
+  created_at: number;
+  active: number;
+  booking_count: number;
+  conversation_count: number;
+  last_activity: number;
 };
 export type Message = {
   id: string;
   sender_id: string;
   sender_name: string;
   sender_role: string;
+  sender_title: string | null;
   body: string;
   created_at: number;
   staff_read_at: number | null;
@@ -84,6 +110,7 @@ export type Post = {
   author: string;
   like_count: number;
   comment_count: number;
+  view_count: number;
   created_at: number;
   hidden?: number;
   images: string[];
@@ -106,10 +133,15 @@ export type SiteConfig = {
   defaultTheme?: ThemeId;
 };
 export type Settings = {
-  media: {images:ImageMap};
+  media: {
+    images: ImageMap;
+  };
   site: SiteConfig;
   booking: BookingConfig;
-  payment: { available: boolean; methods: string[] };
+  payment: {
+    available: boolean;
+    methods: string[];
+  };
   retentionDays: number;
 };
 let csrf = "";
@@ -157,174 +189,210 @@ export const categories = [
   "Cosplay",
   "交流问答",
 ];
-
-type Context = {
+type Site = {
   user: User | null;
   loading: boolean;
   services: Service[];
   settings: Settings | null;
   siteError: string;
+  chatOpen: boolean;
+  chatThread: string | undefined;
+  live: boolean;
+  revision: number;
   refreshSite: () => Promise<void>;
   authenticate: (mode: string, body: unknown) => Promise<User>;
   logout: () => Promise<void>;
   openChat: (id?: string) => void;
-  chatThread?: string;
-  chatOpen: boolean;
   setChatOpen: (open: boolean) => void;
-  live: boolean;
-  revision: number;
 };
-const SiteContext = createContext<Context>(null!);
-export const useSite = () => useContext(SiteContext);
-export function SiteProvider({ children }: { children: ReactNode }) {
-  const {setSiteTheme} = useTheme();
-  const {setImages} = useMedia();
-  const copy = useCopy(),
-    locale = useLocale();
-  const [user, setUser] = useState<User | null>(null),
-    [loading, setLoading] = useState(true);
-  const [services, setServices] = useState<Service[]>([]),
-    [settings, setSettings] = useState<Settings | null>(null),
-    [siteError, setSiteError] = useState("");
-  const [chatOpen, setChatOpen] = useState(false),
-    [chatThread, setChatThread] = useState<string>(),
-    [live, setLive] = useState(false),
-    [revision, setRevision] = useState(0);
-  const refreshSite = useCallback(async () => {
-    try {
-      const [s, config] = await Promise.all([
-        api<Service[]>("/services"),
-        api<Settings>("/settings"),
-      ]);
-      setServices(s);
-      setSettings(config);
-      setSiteTheme(config.site.defaultTheme);
-      setImages(config.media?.images || {});
-      setSiteError("");
-    } catch (e) {
-      setSiteError((e as Error).message);
-    }
-  }, [setSiteTheme,setImages]);
-  useEffect(() => {
-    api<{ installed: boolean }>("/install/status")
-      .then(async (status) => {
-        if (!status.installed) {
-          window.location.replace(getPathname({ href: "/install", locale }));
+const key: InjectionKey<Site> = Symbol("site");
+export function useSite() {
+  return inject(key)!;
+}
+export function provideSite() {
+  const theme = useTheme(),
+    media = useMedia(),
+    copy = useCopy(),
+    router = useRouter();
+  const rawServices = ref<Service[]>([]);
+  let retryTimer: number | undefined;
+  const state = reactive({
+    user: null as User | null,
+    loading: true,
+    get services() {
+      return rawServices.value.map((s) => localizeService(s, copy));
+    },
+    settings: null as Settings | null,
+    siteError: "",
+    chatOpen: false,
+    chatThread: undefined as string | undefined,
+    live: false,
+    revision: 0,
+    async refreshSite() {
+      if (retryTimer !== undefined) {
+        clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
+      try {
+        const [services, settings] = await Promise.all([
+          api<Service[]>("/services"),
+          api<Settings>("/settings"),
+        ]);
+        rawServices.value = services;
+        state.settings = settings;
+        theme.setSiteTheme(settings.site.defaultTheme);
+        media.setImages(settings.media?.images || {});
+        state.siteError = "";
+      } catch (error) {
+        state.siteError = (error as Error).message;
+        if (typeof window !== "undefined" && retryTimer === undefined)
+          retryTimer = window.setTimeout(() => {
+            retryTimer = undefined;
+            if (!disposed) void state.refreshSite();
+          }, 2000);
+      }
+    },
+    async authenticate(mode: string, body: unknown) {
+      const data = await send<{
+        user: User;
+        csrf: string;
+      }>("/auth/" + mode, body);
+      csrf = data.csrf;
+      state.user = data.user;
+      return data.user;
+    },
+    async logout() {
+      await send("/auth/logout", {});
+      csrf = "";
+      state.user = null;
+      state.chatOpen = false;
+    },
+    openChat(id?: string) {
+      state.chatThread = id;
+      state.chatOpen = true;
+    },
+    setChatOpen(open: boolean) {
+      state.chatOpen = open;
+    },
+  }) as Site;
+  provide(key, state);
+  let events: EventSource | undefined,
+    initialized = false,
+    disposed = false;
+  onMounted(() => {
+    watch(
+      () => router.currentRoute.value.path,
+      async (path) => {
+        if (stripLocale(path) === "/install" || initialized) return;
+        initialized = true;
+        try {
+          const status = await api<{
+            installed: boolean;
+          }>("/install/status");
+          if (!status.installed) {
+            initialized = false;
+            const locale = document.documentElement.lang;
+            await router.replace(localizedPath("/install", locale));
+            return;
+          }
+          await state.refreshSite();
+          const data = await api<{
+            user: User | null;
+            csrf: string | null;
+          }>("/auth/me");
+          if (!disposed) {
+            csrf = data.csrf || "";
+            state.user = data.user;
+          }
+        } catch {
+          state.siteError = copy("暂时无法连接服务，请检查 API 服务后刷新");
+        } finally {
+          state.loading = false;
+        }
+      },
+      { immediate: true },
+    );
+    watch(
+      () => state.user?.id,
+      (id) => {
+        events?.close();
+        state.live = false;
+        if (!id) return;
+        const source = (events = new EventSource("/api/events"));
+        source.addEventListener("connected", () => {
+          state.live = true;
+          state.revision++;
+        });
+        source.addEventListener("update", (event) => {
+          try {
+            window.dispatchEvent(
+              new CustomEvent("yifan-update", {
+                detail: JSON.parse((event as MessageEvent).data),
+              }),
+            );
+          } catch {}
+          state.revision++;
+        });
+        source.addEventListener("logout", () => {
+          csrf = "";
+          state.user = null;
+          source.close();
+        });
+        source.onerror = () => {
+          state.live = false;
+        };
+      },
+      { immediate: true },
+    );
+  });
+  onBeforeUnmount(() => {
+    disposed = true;
+    if (retryTimer !== undefined) clearTimeout(retryTimer);
+    events?.close();
+  });
+  return state;
+}
+export function useResource<T>(path: MaybeRefOrGetter<string | null>) {
+  const data = ref<T | null>(null),
+    error = ref(""),
+    loading = ref(true),
+    revision = ref(0);
+  let generation = 0,
+    controller: AbortController | undefined;
+  const reload = () => {
+    revision.value++;
+  };
+  onMounted(() =>
+    watch(
+      () => [toValue(path), revision.value] as const,
+      async ([url]) => {
+        const current = ++generation;
+        controller?.abort();
+        controller = new AbortController();
+        if (!url) {
+          data.value = null;
+          error.value = "";
+          loading.value = false;
           return;
         }
-        await refreshSite();
-        return api<{ user: User | null; csrf: string | null }>("/auth/me").then(
-          (data) => {
-            csrf = data.csrf || "";
-            setUser(data.user);
-          },
-        );
-      })
-      .finally(() => setLoading(false))
-      .catch(() =>
-        setSiteError(copy("暂时无法连接服务，请检查 API 服务后刷新")),
-      );
-  }, [refreshSite, locale, copy]);
-  useEffect(() => {
-    if (!user) {
-      setLive(false);
-      return;
-    }
-    const events = new EventSource("/api/events");
-    events.addEventListener("connected", () => {
-      setLive(true);
-      setRevision((v) => v + 1);
-    });
-    events.addEventListener("update", (event) => {
-      try {
-        window.dispatchEvent(new CustomEvent("yifan-update", {detail: JSON.parse((event as MessageEvent).data)}));
-      } catch { /* Re-fetch canonical state if an event payload is unavailable. */ }
-      setRevision((v) => v + 1);
-    });
-    events.addEventListener("logout", () => {
-      csrf = "";
-      setUser(null);
-      events.close();
-    });
-    events.onerror = () => setLive(false);
-    return () => events.close();
-  }, [user?.id]);
-  async function authenticate(mode: string, body: unknown) {
-    const data = await send<{ user: User; csrf: string }>(
-      `/auth/${mode}`,
-      body,
-    );
-    csrf = data.csrf;
-    setUser(data.user);
-    return data.user;
-  }
-  async function logout() {
-    await send("/auth/logout", {});
-    csrf = "";
-    setUser(null);
-    setChatOpen(false);
-  }
-  function openChat(threadId?: string) {
-    setChatThread(threadId);
-    setChatOpen(true);
-  }
-  const localizedServices = useMemo(
-    () => services.map((s) => localizeService(s, copy)),
-    [services, copy],
+        loading.value = true;
+        error.value = "";
+        try {
+          const result = await api<T>(url, { signal: controller.signal });
+          if (current === generation) data.value = result;
+        } catch (reason) {
+          if (current === generation && (reason as Error).name !== "AbortError")
+            error.value = (reason as Error).message;
+        } finally {
+          if (current === generation) loading.value = false;
+        }
+      },
+      { immediate: true },
+    ),
   );
-  return (
-    <SiteContext.Provider
-      value={{
-        user,
-        loading,
-        services: localizedServices,
-        settings,
-        siteError,
-        refreshSite,
-        authenticate,
-        logout,
-        openChat,
-        chatThread,
-        chatOpen,
-        setChatOpen,
-        live,
-        revision,
-      }}
-    >
-      {children}
-    </SiteContext.Provider>
-  );
-}
-
-export function useResource<T>(path: string | null) {
-  const [data, setData] = useState<T | null>(null),
-    [error, setError] = useState(""),
-    [loading, setLoading] = useState(true);
-  const [revision, setRevision] = useState(0);
-  const reload = useCallback(() => setRevision((v) => v + 1), []);
-  useEffect(() => {
-    let active = true;
-    if (!path) {
-      setData(null);
-      setLoading(false);
-      setError("");
-      return;
-    }
-    setLoading(true);
-    setError("");
-    api<T>(path)
-      .then((value) => {
-        if (active) setData(value);
-      })
-      .catch((e) => {
-        if (active) setError(e.message);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [path, revision]);
-  return { data, error, loading, reload };
+  onBeforeUnmount(() => {
+    generation++;
+    controller?.abort();
+  });
+  return reactive({ data, error, loading, reload });
 }

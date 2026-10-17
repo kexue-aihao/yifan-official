@@ -7,11 +7,9 @@ RUN npm run build && npm prune --omit=dev
 
 FROM node:24-alpine
 WORKDIR /app
-ENV NODE_ENV=production PORT=3001 YIFAN_DATA_DIR=/app/data NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production PORT=3001 YIFAN_DATA_DIR=/app/data
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/.next ./.next
-COPY --from=build --chown=node:node /app/public ./public
-COPY --from=build --chown=node:node /app/next.config.mjs ./next.config.mjs
+COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/server ./server
 COPY --from=build --chown=node:node /app/shared ./shared
 COPY --from=build --chown=node:node /app/i18n ./i18n

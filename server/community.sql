@@ -2,6 +2,11 @@ CREATE TABLE IF NOT EXISTS post_media (
  post_id VARCHAR(36) PRIMARY KEY, images TEXT NOT NULL,
  FOREIGN KEY(post_id) REFERENCES posts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS post_view_events (
+ post_id VARCHAR(36) NOT NULL, event_id CHAR(36) NOT NULL, created_at BIGINT NOT NULL,
+ PRIMARY KEY(post_id,event_id), INDEX post_view_expiry(created_at),
+ FOREIGN KEY(post_id) REFERENCES posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
 CREATE TABLE IF NOT EXISTS post_sources (
  post_id VARCHAR(36) PRIMARY KEY, user_id VARCHAR(36), ip VARCHAR(45) NOT NULL,
  fingerprint CHAR(64) NOT NULL, fingerprint_version VARCHAR(32) NOT NULL,

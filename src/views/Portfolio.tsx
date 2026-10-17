@@ -1,13 +1,17 @@
-"use client";
-import {SiteImage} from '../MediaProvider';
-import { useCopy } from "../i18n";
-
-import { useState } from "react";
-import { Link, useSearchParams } from "../routing";
-import { Plus } from "lucide-react";
+import { Plus } from "lucide-vue-next";
+import { AnimatePresence, motion } from "motion-v";
+import { defineComponent, shallowRef, ref as vueRef } from "vue";
 import { Arrow, Modal } from "../components";
-import {useTheme} from '../ThemeProvider';
-
+import { useCopy } from "../i18n";
+import { SiteImage } from "../MediaProvider";
+import {
+  FilterTabs,
+  flowEase,
+  layoutFlow,
+  useMotionPreference,
+} from "../motion";
+import { Link, useSearchParams } from "../routing";
+import { useTheme } from "../ThemeProvider";
 const works = [
   {
     title: "在爱里，自然发生",
@@ -66,90 +70,140 @@ const works = [
     text: "把爱藏进场景细节，让每一次相聚被温柔记住。",
   },
 ];
-export default function Portfolio() {
-  const copy = useCopy();
-  const {theme}=useTheme();
-  const [params] = useSearchParams();
-  const [filter, setFilter] = useState(params.get("category") || "全部灵感");
-  const [selected, setSelected] = useState<(typeof works)[number] | null>(null);
-  return (
-    <div className={`page container portfolio-page portfolio-${theme}`}>
-      <div className="page-title">
-        <span className="eyebrow">{copy("A CURATED WORLD OF YI FAN")}</span>
-        <h1>{copy("在光影里，看见心动。")}</h1>
-        <p>
-          {copy("一些关于爱、风格与庆祝的灵感。")}
-          <br />
-          {copy("你的故事，将拥有属于自己的模样。")}
-        </p>
-      </div>
-      <div className="filter-tabs" role="group" aria-label={copy("作品分类")}>
-        {["全部灵感", ...new Set(works.map((w) => w.category))].map((f) => (
-          <button
-            className={f === filter ? "active" : ""}
-            aria-pressed={f === filter}
-            onClick={() => setFilter(f)}
-            key={f}
-          >
-            {copy(f)}
-          </button>
-        ))}
-      </div>
-      <div className={`gallery-grid gallery-${theme}`} data-layout={`gallery-${theme}`}>
-        {works
-          .filter((w) => filter === "全部灵感" || w.category === filter)
-          .map((w,i) => (
-            <button
-              className="gallery-item"
-              key={w.title}
-              onClick={() => setSelected(w)}
-            >
-              {theme==='sage'&&<span className="gallery-index">FIG. {String(i+1).padStart(3,'0')} / {copy(w.category)}</span>}
-              {theme==='noir'&&<div className="gallery-editorial-head"><span>0{i+1}</span><h2>{copy(w.title)}</h2></div>}
-              <div className="image-wrap">
-                <SiteImage src={w.image} alt={copy(w.title)} loading="lazy" />
-                <span className="gallery-plus">
-                  <Plus size={22} />
-                </span>
-              </div>
-              <div>
-                {theme!=='noir'&&<h2>{copy(w.title)}</h2>}
-                <span>{copy(w.en)}</span>
-                {theme==='rose'&&<p>{copy(w.text)}</p>}
-                {theme==='noir'&&<span className="gallery-category">{copy(w.category)}<Plus size={18}/></span>}
-              </div>
-            </button>
-          ))}
-      </div>
-      <p className="image-disclaimer">
-        {copy(
-          "本画廊为风格灵感参考，图片来自 Unsplash，并非壹梵真实客片。正式作品将在取得授权后更新。",
-        )}
-      </p>
-      {selected && (
-        <Modal
-          wide
-          title={copy(selected.title)}
-          onClose={() => setSelected(null)}
+const Portfolio = defineComponent(
+  () => {
+    const copy = useCopy();
+    const appearance = useTheme();
+    const reduced = useMotionPreference();
+    const [params] = useSearchParams();
+    const filter = vueRef(params.value.get("category") || "全部灵感");
+    const selected = vueRef<(typeof works)[number] | null>(null);
+    const origin = shallowRef<HTMLImageElement | null>(null);
+    return () => (
+      <div
+        class={`page container portfolio-page portfolio-${appearance.theme}`}
+      >
+        <div class="page-title">
+          <span class="eyebrow">{copy("A CURATED WORLD OF YI FAN")}</span>
+          <h1>{copy("在光影里，看见心动。")}</h1>
+          <p>
+            {copy("一些关于爱、风格与庆祝的灵感。")}
+            <br />
+            {copy("你的故事，将拥有属于自己的模样。")}
+          </p>
+        </div>
+        <FilterTabs
+          items={["全部灵感", ...new Set(works.map((w) => w.category))]}
+          value={filter.value}
+          onChange={(__value) => {
+            filter.value = __value;
+          }}
+          label={copy("作品分类")}
+        />
+        <div
+          class={`gallery-grid gallery-${appearance.theme}`}
+          data-layout={`gallery-${appearance.theme}`}
         >
-          <SiteImage
-            className="lightbox-image"
-            src={selected.image}
-            alt={copy(selected.title)}
-          />
-          <span className="eyebrow">{copy(selected.en)}</span>
-          <p>{copy(selected.text)}</p>
-          <p className="subtle-note">{copy("风格示意 · 非品牌客片")}</p>
-          <Link
-            className="button"
-            to="/services"
-            onClick={() => setSelected(null)}
+          <AnimatePresence mode="popLayout" initial={false}>
+            {works
+              .filter(
+                (w) =>
+                  filter.value === "全部灵感" || w.category === filter.value,
+              )
+              .map((w, i) => (
+                <motion.button
+                  class="gallery-item"
+                  key={w.title}
+                  onClick={(event) => {
+                    origin.value = (
+                      event.currentTarget as HTMLElement
+                    ).querySelector("img");
+                    selected.value = w;
+                  }}
+                  layout={reduced.value ? false : "position"}
+                  initial={reduced.value ? false : { opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    scale: reduced.value ? 1 : 0.97,
+                    transition: { duration: reduced.value ? 0 : 0.16 },
+                  }}
+                  transition={{
+                    duration: reduced.value ? 0 : 0.32,
+                    delay: reduced.value ? 0 : Math.min(i * 0.025, 0.1),
+                    ease: flowEase,
+                    layout: reduced.value ? { duration: 0 } : layoutFlow,
+                  }}
+                >
+                  {appearance.theme === "sage" && (
+                    <span class="gallery-index">
+                      FIG. {String(i + 1).padStart(3, "0")} / {copy(w.category)}
+                    </span>
+                  )}
+                  {appearance.theme === "noir" && (
+                    <div class="gallery-editorial-head">
+                      <span>0{i + 1}</span>
+                      <h2>{copy(w.title)}</h2>
+                    </div>
+                  )}
+                  <div class="image-wrap">
+                    <SiteImage
+                      src={w.image}
+                      alt={copy(w.title)}
+                      loading="lazy"
+                    />
+                    <span class="gallery-plus">
+                      <Plus size={22} />
+                    </span>
+                  </div>
+                  <div>
+                    {appearance.theme !== "noir" && <h2>{copy(w.title)}</h2>}
+                    <span>{copy(w.en)}</span>
+                    {appearance.theme === "rose" && <p>{copy(w.text)}</p>}
+                    {appearance.theme === "noir" && (
+                      <span class="gallery-category">
+                        {copy(w.category)}
+                        <Plus size={18} />
+                      </span>
+                    )}
+                  </div>
+                </motion.button>
+              ))}
+          </AnimatePresence>
+        </div>
+        <p class="image-disclaimer">
+          {copy(
+            "本画廊为风格灵感参考，图片来自 Unsplash，并非壹梵真实客片。正式作品将在取得授权后更新。",
+          )}
+        </p>
+        {selected.value && (
+          <Modal
+            wide
+            origin={origin.value}
+            title={copy(selected.value.title)}
+            onClose={() => (selected.value = null)}
           >
-            {copy("预约我的风格")}
-            <Arrow />
-          </Link>
-        </Modal>
-      )}
-    </div>
-  );
-}
+            <SiteImage
+              class="lightbox-image"
+              src={selected.value.image}
+              alt={copy(selected.value.title)}
+            />
+            <span class="eyebrow">{copy(selected.value.en)}</span>
+            <p>{copy(selected.value.text)}</p>
+            <p class="subtle-note">{copy("风格示意 · 非品牌客片")}</p>
+            <Link
+              class="button"
+              to="/services"
+              onClick={() => (selected.value = null)}
+            >
+              {copy("预约我的风格")}
+              <Arrow />
+            </Link>
+          </Modal>
+        )}
+      </div>
+    );
+  },
+  { name: "Portfolio", props: [] },
+);
+export default Portfolio;

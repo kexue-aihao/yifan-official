@@ -777,7 +777,8 @@
     "m_5b4fad1dc9cd": "Até 9 imagens por postagem",
     "m_85a652af5fa0": "Escolha uma imagem padrão ou cole uma URL HTTPS. As padrão seguem as configurações do site.",
     "m_ef7cc2dc73ff": "As impressões usam idioma, fuso, plataforma, tela e dados da requisição, sem canvas nem áudio. Os sinais podem mudar ou ser falsificados e não comprovam identidade sozinhos.",
-    "m_7fe3cc9a8549": "O navegador carrega imagens externas do provedor, que recebe seu IP. O site não envia o endereço da página de origem."
+    "m_7fe3cc9a8549": "O navegador carrega imagens externas do provedor, que recebe seu IP. O site não envia o endereço da página de origem.",
+    "m_e50c1ae2991f": "{count, plural, one {# visualização} other {# visualizações}}"
   },
   "common": {
     "consent": "Li e concordo com a <privacy>Política de Privacidade</privacy> e os <terms>Termos de Reserva</terms>.",

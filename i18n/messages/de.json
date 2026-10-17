@@ -777,7 +777,8 @@
     "m_5b4fad1dc9cd": "Höchstens 9 Bilder pro Beitrag",
     "m_85a652af5fa0": "Standardbild wählen oder HTTPS-Bildlink einfügen. Standardbilder folgen den Website-Einstellungen.",
     "m_ef7cc2dc73ff": "Fingerabdrücke verwenden Sprache, Zeitzone, Plattform, Bildschirm und Anfragedaten, ohne Canvas oder Audio. Die Signale sind veränderbar oder fälschbar und belegen allein keine Identität.",
-    "m_7fe3cc9a8549": "Externe Bilder lädt der Browser beim Anbieter. Dieser erhält die Netzwerk-IP; die Seitenadresse wird nicht als Referrer gesendet."
+    "m_7fe3cc9a8549": "Externe Bilder lädt der Browser beim Anbieter. Dieser erhält die Netzwerk-IP; die Seitenadresse wird nicht als Referrer gesendet.",
+    "m_e50c1ae2991f": "{count, plural, one {# Aufruf} other {# Aufrufe}}"
   },
   "common": {
     "consent": "Ich habe die <privacy>Datenschutzerklärung</privacy> und die <terms>Buchungsbedingungen</terms> gelesen und stimme ihnen zu.",

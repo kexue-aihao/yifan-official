@@ -1,0 +1,146 @@
+/* One shared Web UI for touch, pointer, keyboard and narrow safe areas. */
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 100px;
+}
+body {
+  min-width: 320px;
+}
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+.header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.header-inner,
+.footer-bottom {
+  padding-inline-start: max(24px, env(safe-area-inset-left, 0px));
+  padding-inline-end: max(24px, env(safe-area-inset-right, 0px));
+}
+.footer {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.chat-launcher {
+  bottom: max(24px, calc(12px + env(safe-area-inset-bottom, 0px)));
+}
+.modal {
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overscroll-behavior: contain;
+}
+.modal-inner,
+.message-list {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+/* The footer's legal links must wrap even in the longer translations. */
+.footer-bottom > div {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.footer-bottom > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.page-title h1 {
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+@media (max-width: 1050px) {
+  .header .nav {
+    max-height: calc(100dvh - 92px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+@media (max-width: 760px) {
+  .header .nav {
+    max-height: calc(100dvh - 76px);
+  }
+}
+/* Match form selector specificity; 16px avoids Safari's focus zoom on iPad too. */
+@media (any-pointer: coarse), (max-width: 700px) {
+  :root input:not([type="checkbox"]):not([type="radio"]),
+  :root textarea,
+  :root select {
+    font-size: max(16px, 1em);
+  }
+}
+@media (max-width: 600px) {
+  .header-inner {
+    width: 100%;
+    padding-inline-start: max(12px, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(12px, env(safe-area-inset-right, 0px));
+  }
+  .header-actions {
+    min-width: 0;
+  }
+}
+@supports not (overflow: clip) {
+  .route-transition {
+    overflow: hidden;
+  }
+}
+@media (hover: none) and (pointer: coarse) {
+  .icon-button,
+  .account-link,
+  .menu-toggle,
+  .scene-next,
+  .scene-progress button,
+  .filter-tabs button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .gallery-item:hover img,
+  .package-card:hover img {
+    transform: none;
+  }
+  .button:active,
+  .icon-button:active {
+    opacity: 0.78;
+  }
+}
+@media (max-width: 700px) {
+  .cinema {
+    min-height: 680px;
+    min-height: min(820px, 100svh);
+  }
+  .cinema-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    bottom: 74px;
+  }
+  .scene-picker {
+    order: -1;
+  }
+  .chat-panel {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 24px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .filter-tabs {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+  .route-transition {
+    display: none !important;
+  }
+}

@@ -777,7 +777,8 @@
     "m_5b4fad1dc9cd": "Up to 9 images per post",
     "m_85a652af5fa0": "Choose a default image or paste an HTTPS image URL. Default images follow site image settings.",
     "m_ef7cc2dc73ff": "Fingerprints use browser language, time zone, platform, screen and request data, without canvas or audio collection. Signals can change or be spoofed and cannot establish identity alone.",
-    "m_7fe3cc9a8549": "External images load from their hosts in your browser. Hosts receive your network IP; this site does not send the page referrer."
+    "m_7fe3cc9a8549": "External images load from their hosts in your browser. Hosts receive your network IP; this site does not send the page referrer.",
+    "m_e50c1ae2991f": "{count, plural, one {# view} other {# views}}"
   },
   "common": {
     "consent": "I have read and agree to the <privacy>Privacy Policy</privacy> and <terms>Booking Terms</terms>.",

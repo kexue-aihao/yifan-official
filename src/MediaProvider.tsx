@@ -1,21 +1,65 @@
-"use client";
-import {createContext, useContext, useEffect, useState, type ImgHTMLAttributes, type ReactNode} from 'react';
-export type ImageMap = Partial<Record<string,string>>;
-const MediaContext = createContext({images: {} as ImageMap, setImages: (_value: ImageMap) => {}});
-export const useMedia = () => useContext(MediaContext);
+import {
+  defineComponent,
+  inject,
+  onMounted,
+  provide,
+  reactive,
+  watch,
+  type ImgHTMLAttributes,
+  type InjectionKey,
+} from "vue";
+export type ImageMap = Partial<Record<string, string>>;
+const key: InjectionKey<{
+  images: ImageMap;
+  setImages: (value: ImageMap) => void;
+}> = Symbol("media");
+export function useMedia() {
+  return inject(key)!;
+}
+export function provideMedia(images: ImageMap) {
+  const state = reactive({
+    images,
+    setImages(value: ImageMap) {
+      state.images = value;
+    },
+  });
+  provide(key, state);
+  onMounted(() =>
+    watch(
+      () => state.images,
+      (value) => {
+        document.body.style.setProperty(
+          "--image-dress",
+          `url("${value.dress || "/images/dress.jpg"}")`,
+        );
+      },
+      { immediate: true },
+    ),
+  );
+  return state;
+}
 export function useImageSource() {
-  const {images} = useMedia();
+  const state = useMedia();
   return (source: string) => {
     const slot = /^\/images\/([a-z]+)\.jpg$/.exec(source)?.[1];
-    return slot && images[slot] ? images[slot]! : source;
+    return slot && state.images[slot] ? state.images[slot]! : source;
   };
 }
-export default function MediaProvider({initialImages,children}: {initialImages: ImageMap; children: ReactNode}) {
-  const [images,setImages] = useState(initialImages);
-  useEffect(() => {document.body.style.setProperty('--image-dress', 'url("' + (images.dress || '/images/dress.jpg') + '")');},[images]);
-  return <MediaContext.Provider value={{images,setImages}}>{children}</MediaContext.Provider>;
-}
-export function SiteImage({src='', ...props}: ImgHTMLAttributes<HTMLImageElement>) {
-  const image = useImageSource();
-  return <img {...props} src={typeof src === 'string' ? image(src) : src} referrerPolicy="no-referrer" />;
-}
+export const SiteImage = defineComponent(
+  (
+    props: ImgHTMLAttributes & {
+      src?: string;
+    },
+    { attrs },
+  ) => {
+    const image = useImageSource();
+    return () => (
+      <img
+        {...attrs}
+        src={image(props.src || "")}
+        referrerpolicy="no-referrer"
+      />
+    );
+  },
+  { name: "SiteImage", inheritAttrs: false, props: ["src"] },
+);

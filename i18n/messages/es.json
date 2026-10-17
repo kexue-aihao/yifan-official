@@ -777,7 +777,8 @@
     "m_5b4fad1dc9cd": "Hasta 9 imágenes por publicación",
     "m_85a652af5fa0": "Elige una imagen predeterminada o pega una URL HTTPS. Las predeterminadas siguen la configuración del sitio.",
     "m_ef7cc2dc73ff": "Las huellas usan idioma, zona horaria, plataforma, pantalla y solicitud, sin canvas ni audio. Las señales pueden cambiar o falsificarse y no acreditan identidad por sí solas.",
-    "m_7fe3cc9a8549": "El navegador carga imágenes externas desde su proveedor. Este recibe tu IP; el sitio no envía la dirección de la página de origen."
+    "m_7fe3cc9a8549": "El navegador carga imágenes externas desde su proveedor. Este recibe tu IP; el sitio no envía la dirección de la página de origen.",
+    "m_e50c1ae2991f": "{count, plural, one {# visualización} other {# visualizaciones}}"
   },
   "common": {
     "consent": "He leído y acepto la <privacy>política de privacidad</privacy> y las <terms>condiciones de reserva</terms>.",

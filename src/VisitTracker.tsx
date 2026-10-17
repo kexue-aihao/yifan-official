@@ -1,19 +1,28 @@
-"use client";
-import { useEffect, useRef } from "react";
-import { useSite, send } from "./lib";
+import { defineComponent, onMounted, shallowRef, watch } from "vue";
+import { send, useSite } from "./lib";
 import { useLocation } from "./routing";
-export default function VisitTracker() {
-  const { loading } = useSite();
-  const { pathname } = useLocation();
-  const last = useRef("");
-  useEffect(() => {
-    if (loading || last.current === pathname) return;
-    last.current = pathname;
-    // Route views only. Queries, images, polling and SSE are never page views.
-    void send("/visits", {
-      eventId: crypto.randomUUID(),
-      path: pathname.slice(0, 256),
-    }).catch(() => {});
-  }, [pathname, loading]);
-  return null;
-}
+const VisitTracker = defineComponent(
+  () => {
+    const site = useSite();
+    const routeLocation = useLocation();
+    const last = shallowRef("");
+    onMounted(() => {
+      watch(
+        () => [routeLocation.pathname, site.loading],
+        () => {
+          if (site.loading || last.value === routeLocation.pathname) return;
+          last.value = routeLocation.pathname;
+          // Route views only. Queries, images, polling and SSE are never page views.
+          void send("/visits", {
+            eventId: crypto.randomUUID(),
+            path: routeLocation.pathname.slice(0, 256),
+          }).catch(() => {});
+        },
+        { immediate: true, flush: "post" },
+      );
+    });
+    return () => null;
+  },
+  { name: "VisitTracker", props: [] },
+);
+export default VisitTracker;

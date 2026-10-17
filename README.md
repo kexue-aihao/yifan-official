@@ -1,8 +1,10 @@
 # 壹梵定制 YI FAN
 
-Next.js App Router / React 19 / TypeScript / Motion 前端，Express 5 / Node.js 24 / MySQL 8.0+ 后端。支持婚纱摄影、生日布置、服装写真、婚纱租赁、化妆造型及男女生 Cosplay，包含登录后预约、Epay 订金、实时客服、180 天会话留存、社区及管理后台。
+Vue 3 Composition API / Vue Router / TypeScript / Vite SSR / Motion for Vue 前端，Express 5 / Node.js 24 / MySQL 8.0+ 后端。组件采用 Vue TSX，使用原生 ref、computed 与生命周期；包含登录后预约、Epay 订金、实时客服、180 天会话留存、社区及管理后台。
 
-通过 next-intl 提供简体中文、繁体中文、英语、日语、韩语、法语、德语、西班牙语、巴西葡萄牙语、俄语和阿拉伯语。页头及安装向导可切换语言，支持浏览器语言识别与一年期语言 Cookie。中文默认网址保持 `/services`，其他语言使用 `/en/services`、`/ar/services` 等路径；API 始终使用 `/api`。支持 ICU 复数、Intl 数字/人民币/上海时区日期以及阿拉伯语 RTL。自定义业务内容保持原文。维护说明见本地 `docs/local/i18n.md`。
+通过 ICU MessageFormat 提供简体中文、繁体中文、英语、日语、韩语、法语、德语、西班牙语、巴西葡萄牙语、俄语和阿拉伯语。字典按语言加载；页头及安装向导可切换语言，支持浏览器语言识别与一年期语言 Cookie。中文默认网址保持 `/services`，其他语言使用 `/en/services`、`/ar/services` 等路径；API 始终使用 `/api`。支持复数、Intl 数字/人民币/上海时区日期以及阿拉伯语 RTL。自定义业务内容保持原文。
+
+动效包含新旧页面交接、首页影像与文案同步切换、筛选重排、作品图片展开与回收、弹窗和手机菜单转场。Vue Router 统一协调前进、返回与快速改选，页面以 180ms 退出和 420ms 进入重叠衔接；读取新图片和筛选数据时保留已有内容。布局与影像使用 Motion for Vue，页面和共享图片使用可取消的 Web Animations。适配触摸目标、安全区域、动态视口、移动端表单和系统减少动态设置；不依赖 View Transitions API。可用 `node scripts/verify-platforms.mjs` 对运行中的预览检查 iPhone/iPad WebKit、Android Chrome、桌面 Chrome/Firefox（浏览器模拟，非真机测试）。
 
 顾客预约显示工作人员是否已查看及首次查看时间，客服消息显示已发送或工作人员已读。管理员打开预约详情、在前台窗口看到对应消息后才记录回执，单独加载列表不计已读；状态通过 SSE 同步。已安装网站启动时自动新增回执表，保留历史数据，历史记录默认未读，无需重新安装。
 
@@ -44,11 +46,11 @@ npm run build
 npm start
 ```
 
-Node 同时提供 Next.js 页面与 API。将正式域名 HTTPS 转发到 3001，再打开 `https://你的域名/install`。SSE 路由 `/api/events` 需关闭代理缓冲、保留长连接。
+Node 同时提供 Vue SSR 页面、静态资源与 API。将正式域名 HTTPS 转发到 3001，再打开 `https://你的域名/install`。SSE 路由 `/api/events` 需关闭代理缓冲、保留长连接。生产产物位于 `dist/client` 与 `dist/server`。
 
 `data/installation.json` 保存加密 MySQL 连接配置，`data/settings.key` 为自动生成的加密密钥。也可在首次启动前设置固定的 64 位十六进制 `SETTINGS_ENCRYPTION_KEY`。**将配置文件、密钥与 MySQL 数据配套备份，安装后不可随意更换密钥。** 数据目录必须可写且不能作为静态目录对外提供。数据库短暂故障不会重新开放安装。
 
-Dockerfile 使用 Next.js 构建产物，运行时挂载 `/app/data` 并连接事先创建的外部 MySQL。当前环境没有 Docker，未执行镜像部署验证。
+Dockerfile 使用 Vite 的客户端与服务端构建产物，运行时挂载 `/app/data` 并连接事先创建的外部 MySQL。当前环境没有 Docker，未执行镜像部署验证。
 
 初始管理员在安装页创建。后续可运行 `npm run admin:create` 添加独立管理员；不会将已存在的普通账号提权。
 
@@ -61,7 +63,11 @@ npm test
 npm run test:ui
 ```
 
-测试使用真实 MySQL，默认连接独立的 `127.0.0.1:3317`；可通过 `MYSQL_TEST_HOST/PORT/USER/PASSWORD` 配置。测试账号需要创建/删除测试数据库和测试用户的权限，只应使用独立测试实例。每次创建随机 `yf_test_*` 数据库并在结束后删除，不使用运营数据库。浏览器测试使用本机 Chrome，可设置 `PLAYWRIGHT_CHANNEL=msedge`；需先构建 Next.js。截图保存在本地 `artifacts/`。
+测试使用真实 MySQL，默认连接独立的 `127.0.0.1:3317`；可通过 `MYSQL_TEST_HOST/PORT/USER/PASSWORD` 配置。测试账号需要创建/删除测试数据库和测试用户的权限，只应使用独立测试实例。每次创建随机 `yf_test_*` 数据库并在结束后删除，不使用运营数据库。浏览器测试使用本机 Chrome，可设置 `PLAYWRIGHT_CHANNEL=msedge`；需先执行 `npm run build`。截图保存在本地 `artifacts/`。
+
+对已运行的预览执行 `npm run test:motion -- http://localhost:5173`，检查三种浏览器配置和四套主题的转场中途状态、快速改选、浏览器返回、慢图片/筛选响应、弹窗中断、焦点与减少动态设置。`npm run test:refresh -- http://localhost:5173` 检查 JavaScript 加载前的首屏样式及连续刷新。
+
+`npm run test:hardening -- http://localhost:5173` 检查三种浏览器下的 320px 长文案布局、平板触屏字号、横屏导航、换页及语言焦点、聊天慢响应草稿与历史滚动、网络失败后的重试。聊天和浏览统计请求使用模拟响应，不写入预览业务数据；截图与结果保存到 `artifacts/ui-hardening/`。这些检查使用浏览器模拟，仍需在真实 iPhone、iPad 和 Android 设备上验收软键盘与浏览器工具栏表现。
 
 ## 文档与营业配置
 

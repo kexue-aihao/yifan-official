@@ -1,6 +1,6 @@
-import { test, expect, type BrowserContext } from "@playwright/test";
+import { test, expect, devices, webkit, type BrowserContext } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "../../shared/translator.mjs";
 import { locales } from "../../i18n/locales.mjs";
 import {randomUUID} from "node:crypto";
 import mysql from "mysql2/promise";
@@ -147,6 +147,141 @@ test("桌面与手机视觉、导航、作品筛选", async ({ page }) => {
     path: "artifacts/services-mobile.png",
     fullPage: true,
   });
+  expect(errors).toEqual([]);
+});
+
+test("社区浏览计数：后台页面、请求重试与苹果/安卓浏览", async ({page, browser}) => {
+  test.setTimeout(90000);
+  const origin = "http://127.0.0.1:4174";
+  const auth = await page.request.post("/api/auth/register", {headers: {origin}, data: {
+    name: "浏览计数测试", email: "views-" + Date.now() + "@example.com", password: "PostViews123!", consent: true,
+  }}).then(response => response.json());
+  const created = await page.request.post("/api/posts", {
+    headers: {origin, "x-csrf-token": auth.csrf},
+    data: {title: "跨设备浏览次数验证", body: "每次打开详情计数，互动不重复累计。", category: "交流问答"},
+  }).then(response => response.json());
+  const postPath = "/community/" + created.id;
+  const apiPath = "/api/posts/" + created.id;
+  const context = await browser.newContext({baseURL: origin});
+  const guest = await context.newPage();
+  try {
+    await guest.addInitScript(() => Object.defineProperty(document, "hidden", {configurable: true, get: () => true}));
+    const events: string[] = [];
+    await guest.route("**" + apiPath + "/views", async route => {
+      events.push(route.request().postDataJSON().eventId);
+      const result = await route.fetch();
+      // The first write commits, but the reader loses the response.
+      await route.fulfill(events.length === 1 ? {status: 503, json: {error: "Temporary network failure"}} : {response: result});
+    });
+    await guest.goto(postPath);
+    await expect(guest.locator(".post-detail .post-views")).toHaveText("0 次浏览");
+    expect(events).toHaveLength(0);
+    const failed = guest.waitForResponse(response => response.url().endsWith(apiPath + "/views") && response.status() === 503);
+    await guest.evaluate(() => {
+      Object.defineProperty(document, "hidden", {configurable: true, get: () => false});
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await (await failed).finished();
+    await expect.poll(() => guest.evaluate(() => document.visibilityState)).toBe("visible");
+    await guest.evaluate(() => window.dispatchEvent(new Event("online")));
+    await expect(guest.locator(".post-detail .post-views")).toHaveText("1 次浏览");
+    expect(events).toHaveLength(2);
+    expect(events[1]).toBe(events[0]);
+  } finally {await context.close();}
+
+  const safari = await webkit.launch({channel: undefined});
+  try {
+    for (const [deviceBrowser, device, expected] of [[safari, "iPhone 13", 2], [browser, "Pixel 7", 3]] as const) {
+      const mobile = await deviceBrowser.newContext({...devices[device], locale: "zh-CN", baseURL: origin});
+      try {
+        const tab = await mobile.newPage();
+        await tab.goto(postPath);
+        await expect(tab.locator(".post-detail .post-views")).toHaveText(expected + " 次浏览");
+        await tab.getByRole("link", {name: "回到壹梵社区"}).click();
+        const card = tab.locator(".forum-post").filter({hasText: "跨设备浏览次数验证"});
+        await expect(card.locator(".post-views")).toHaveText(expected + " 次浏览");
+        expect(await tab.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      } finally {await mobile.close();}
+    }
+  } finally {
+    await safari.close();
+    expect((await page.request.delete(apiPath, {headers: {origin, "x-csrf-token": auth.csrf}})).status()).toBe(200);
+  }
+});
+
+test("页面交接连续衔接，快速导航采用最后一次选择，筛选与锚点保持可用", async ({page}) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/");
+  await page.evaluate(() => {
+    const phases: string[] = [];
+    Object.assign(window, {motionPhases: phases});
+    const veil = document.querySelector(".route-transition")!;
+    new MutationObserver(() => phases.push(veil.getAttribute("data-phase")!))
+      .observe(veil, {attributes: true, attributeFilter: ["data-phase"]});
+  });
+  await page.locator(".nav").getByRole("link", {name: "影像作品"}).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle", {timeout: 4000});
+  const phases = await page.evaluate(() => (window as typeof window & {motionPhases: string[]}).motionPhases);
+  expect(phases).toEqual(expect.arrayContaining(["waiting", "entering", "idle"]));
+  await expect(page.locator(".route-snapshot > *")).toHaveCount(0);
+
+  await page.getByRole("button", {name: "个人写真", exact: true}).click();
+  await expect(page.locator(".gallery-item")).toHaveCount(1);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle");
+  await page.locator(".gallery-item").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.locator(".gallery-item")).toBeFocused();
+  expect(await page.evaluate(() => document.body.style.overflow)).not.toBe("hidden");
+
+  await page.evaluate(() => {
+    (document.querySelector('.nav a[href="/services"]') as HTMLElement).click();
+    (document.querySelector('.nav a[href="/community"]') as HTMLElement).click();
+  });
+  await expect(page).toHaveURL(/\/community$/);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle", {timeout: 4000});
+  await page.goBack();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.locator(".gallery-item")).toHaveCount(8);
+  await page.locator(".brand").first().click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle");
+  await page.evaluate(() => {
+    (document.querySelector('.nav a[href="/portfolio"]') as HTMLElement).click();
+    (document.querySelector('.nav a[href="/#our-story"]') as HTMLElement).click();
+  });
+  await expect(page).toHaveURL(/#our-story$/);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle");
+  await expect.poll(() => page.locator("#our-story").evaluate(el => el.getBoundingClientRect().top)).toBeLessThan(200);
+  await page.waitForTimeout(400);
+  await expect(page).toHaveURL(/#our-story$/);
+  expect(errors).toEqual([]);
+});
+
+test("减少动态时直接导航并保持画廊筛选、弹窗和手机菜单可用", async ({page}) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  page.on("console", message => {
+    if (message.type() === "error" && !message.text().includes("404 (Not Found)")) errors.push(message.text());
+  });
+  await page.emulateMedia({reducedMotion: "reduce"});
+  await page.setViewportSize({width: 390, height: 844});
+  await page.goto("/");
+  await expect(page.locator(".route-stage")).toHaveCSS("transform", "none");
+  await page.getByRole("button", {name: "打开导航"}).click();
+  await page.locator(".nav").getByRole("link", {name: "影像作品"}).click();
+  await expect(page).toHaveURL(/\/portfolio$/);
+  await expect(page.locator(".route-transition")).toHaveAttribute("data-phase", "idle");
+  await expect(page.getByRole("button", {name: "打开导航"})).toHaveAttribute("aria-expanded", "false");
+  await page.getByRole("button", {name: "个人写真", exact: true}).click();
+  await expect(page.locator(".gallery-item")).toHaveCount(1);
+  await page.locator(".gallery-item").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
 
@@ -315,8 +450,7 @@ test("11种语言服务端渲染、语言检测、RTL手机布局及本地化404
     fullPage: true,
   });
   const response = await page.goto("/en/not-a-page");
-  // Next.js keeps 200 after streaming has started and adds noindex for notFound().
-  expect([200, 404]).toContain(response?.status());
+  expect(response?.status()).toBe(404);
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute(
     "content",
     "noindex",
@@ -470,6 +604,7 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   await expect(
     page.getByRole("heading", { name: "第一次拍摄的自然光灵感" }),
   ).toBeVisible();
+  await expect(page.locator(".post-detail .post-views")).toHaveText("1 次浏览");
   expect(
     await page.evaluate(() => (window as unknown as { bad?: boolean }).bad),
   ).toBeUndefined();
@@ -480,6 +615,14 @@ test("注册 → 预约 → 会话 → 发帖回复 → 管理员接待与设置
   await expect(page.locator(".comment")).toHaveCount(1);
   await page.getByRole("button", { name: "0 人喜欢" }).click();
   await expect(page.getByRole("button", { name: "1 人喜欢" })).toBeVisible();
+  await expect(page.locator(".post-detail .post-views")).toHaveText("1 次浏览");
+  await page.reload();
+  await expect(page.locator(".post-detail .post-views")).toHaveText("2 次浏览");
+  await page.getByRole("link", {name: "回到壹梵社区"}).click();
+  const viewedPost = page.locator(".forum-post").filter({hasText: "第一次拍摄的自然光灵感"});
+  await expect(viewedPost.locator(".post-views")).toHaveText("2 次浏览");
+  await viewedPost.click();
+  await expect(page.locator(".post-detail .post-views")).toHaveText("3 次浏览");
   await admin.getByRole("button", { name: "定制服务", exact: true }).click();
   await admin.getByRole("button", { name: "编辑婚纱摄影" }).click();
   await admin.getByRole("spinbutton", { name: "套餐价格（元）" }).fill("3999");
@@ -703,6 +846,7 @@ test('社区图床预览与发布、注册 ID 及管理员来源追溯、全主�
   expect(publicPost).not.toHaveProperty('fingerprint');
   expect(publicPost).not.toHaveProperty('ip');
   await page.setViewportSize({width:375,height:850});
+  await expect(page.locator('.post-detail .post-views')).toHaveText('1 次浏览');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await page.screenshot({path:'artifacts/community-images-mobile.png',fullPage:true,animations:'disabled'});
   await page.goto('/community');

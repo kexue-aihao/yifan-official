@@ -9,7 +9,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import next from "next";
+import { attachFrontend } from "../server/frontend.mjs";
 import { createTestDatabase } from "../tests/mysql-fixture.mjs";
 import { createRuntime } from "../server/install.mjs";
 
@@ -22,9 +22,7 @@ const runtime = await createRuntime({
   origin: "http://127.0.0.1:4174",
   testing: true,
 });
-const frontend = next({ dev: false, hostname: "127.0.0.1", port: 4174 });
-await frontend.prepare();
-runtime.app.use((req, res) => frontend.getRequestHandler()(req, res));
+const frontend = await attachFrontend(runtime.app);
 mkdirSync("artifacts", { recursive: true });
 writeFileSync(
   "artifacts/ui-fixture.json",
@@ -36,7 +34,7 @@ writeFileSync(
   { mode: 0o600 },
 );
 const server = runtime.app.listen(4174, "127.0.0.1", () =>
-  console.log("Isolated Next.js + MySQL UI server on 4174"),
+  console.log("Isolated Vue 3 SSR + MySQL UI server on 4174"),
 );
 let closing = false;
 for (const signal of ["SIGINT", "SIGTERM"])

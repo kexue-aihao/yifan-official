@@ -120,6 +120,8 @@ export function visitorRoutes(app, db) {
     MIN(e.created_at) AS first_seen,MAX(e.created_at) AS last_seen
     FROM visitor_events e LEFT JOIN visitor_ips g ON g.ip=e.ip`;
   app.get("/api/admin/visitors", async (req, res) => {
+    if (req.user?.staff_member_role === "staff")
+      return res.status(403).json({ error: "需要店主权限" });
     const page = Math.max(
       1,
       Math.min(10000, Number.parseInt(req.query.page, 10) || 1),
@@ -147,6 +149,8 @@ export function visitorRoutes(app, db) {
     res.json({ items, totals, page, pageSize: 25, retentionDays: 180 });
   });
   app.get("/api/admin/visitor-events", async (req, res) => {
+    if (req.user?.staff_member_role === "staff")
+      return res.status(403).json({ error: "需要店主权限" });
     const page = Math.max(
       1,
       Math.min(10000, Number.parseInt(req.query.page, 10) || 1),

@@ -359,16 +359,20 @@ export async function createRuntime(options = {}) {
             409,
             "此数据库已存在管理员，请恢复安装配置文件或使用空数据库。",
           );
+        const ownerId = id();
         await db
           .prepare("INSERT INTO users VALUES (?,?,?,?,?,?)")
           .run(
-            id(),
+            ownerId,
             input.adminEmail,
             input.adminName,
             password,
             "admin",
             Date.now(),
           );
+        await db
+          .prepare("INSERT INTO staff_profiles(user_id,display_name,title,member_role,active,sort_order,created_at) VALUES (?,?,?,?,?,?,?)")
+          .run(ownerId, input.adminName, "店主", "owner", 1, 0, Date.now());
       });
       const tmp = resolve(dataDir, `installation.${randomUUID()}.tmp`);
       try {

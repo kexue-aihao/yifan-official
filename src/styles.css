@@ -316,8 +316,15 @@ p {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--line);
   font-size: 11px;
   white-space: nowrap;
+}
+.account-link:hover {
+  border-color: var(--gold);
+  color: var(--gold);
 }
 .account-link span {
   max-width: 92px;
@@ -1684,12 +1691,12 @@ legend small {
   gap: 13px;
 }
 .chat-heading span {
-  font-size: 14px;
+  font-size: 16px;
   letter-spacing: 1px;
 }
 .chat-heading small {
   display: block;
-  font-size: 6px;
+  font-size: 8px;
   letter-spacing: 1.2px;
   color: #c4c6b9;
   margin-top: 4px;
@@ -1698,14 +1705,21 @@ legend small {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--muted);
-  padding: 9px 14px;
+  padding: 10px 14px;
   background: #eeebe4;
   flex-wrap: wrap;
 }
 .chat-connection > span:last-child {
   margin-left: auto;
+}
+.conversation-assignee {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
 }
 .connection-dot {
   display: block;
@@ -1719,7 +1733,7 @@ legend small {
 }
 .chat-thread-toggle {
   padding: 5px 14px;
-  font-size: 10px;
+  font-size: 12px;
   min-height: 35px;
   border-bottom: 1px solid var(--line);
 }
@@ -1744,7 +1758,7 @@ legend small {
   font-size: 20px;
 }
 .message-list .empty p {
-  font-size: 11px;
+  font-size: 13px;
 }
 .message {
   display: flex;
@@ -1759,7 +1773,7 @@ legend small {
   margin-left: auto;
 }
 .message-author {
-  font-size: 8px;
+  font-size: 11px;
   color: var(--muted);
   display: flex;
   gap: 9px;
@@ -1767,12 +1781,13 @@ legend small {
   margin-bottom: 5px;
 }
 .message-author time {
-  font-size: 7px;
+  font-size: 10px;
 }
 .message-bubble {
-  padding: 9px 12px;
+  padding: 10px 14px;
   background: #e8e3d9;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1781,7 +1796,7 @@ legend small {
 }
 .message-receipt {
   margin-block-start: 5px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
 }
 .message-receipt.read, .booking-read-status.read {
@@ -1807,9 +1822,10 @@ legend small {
 .chat-composer textarea {
   border: 0;
   padding: 7px;
-  min-height: 52px;
+  min-height: 56px;
   resize: none;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.5;
   background: #f5f2ed;
 }
 .chat-composer .button {
@@ -1826,7 +1842,7 @@ legend small {
   margin: 20px 0;
 }
 .chat-signin > p {
-  font-size: 12px;
+  font-size: 13px;
   margin: 17px 0 25px;
   line-height: 2;
 }
@@ -1848,11 +1864,11 @@ legend small {
   gap: 5px;
 }
 .thread-list strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
 }
 .thread-list button > span {
-  font-size: 11px;
+  font-size: 12px;
   max-width: 100%;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1864,7 +1880,7 @@ legend small {
   background: none;
   display: block;
   margin: 0 auto 15px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--gold);
   min-height: 35px;
 }
@@ -1935,16 +1951,24 @@ legend small {
 }
 .post-stats {
   display: flex;
+  flex-wrap: wrap;
   gap: 25px;
   margin-top: 20px;
   align-items: center;
   font-size: 10px;
   color: var(--muted);
 }
-.post-stats > span {
+.post-stats > span,
+.post-views {
   display: flex;
   align-items: center;
   gap: 7px;
+}
+.post-views {
+  font-variant-numeric: tabular-nums;
+}
+.post-views > svg {
+  flex-shrink: 0;
 }
 .post-stats .read-story {
   margin-left: auto;
@@ -2366,6 +2390,168 @@ legend small {
   flex-direction: column;
   min-height: 0;
   min-width: 0;
+}
+.inbox-assignment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfaf7;
+}
+.inbox-assignment label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+  color: var(--muted);
+  min-width: 0;
+}
+.inbox-assignment select {
+  min-height: 34px;
+  min-width: 190px;
+  font-size: 11px;
+}
+.team-management {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.team-create,
+.team-member {
+  padding: 22px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.team-member {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr 90px auto auto;
+  gap: 14px;
+  align-items: end;
+}
+.team-member-account {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding-bottom: 9px;
+}
+.team-member-account strong {
+  font-size: 14px;
+}
+.team-member-account span {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.customer-management,
+.customer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.customer-toolbar {
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+.customer-toolbar > label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.customer-search {
+  flex: 1 1 240px;
+  min-width: 220px;
+  border-bottom: 1px solid var(--line);
+  padding: 7px 0;
+  color: var(--muted);
+}
+.customer-search input {
+  border: 0;
+  background: transparent;
+  min-width: 0;
+  width: 100%;
+  padding: 4px 0;
+}
+.customer-user {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.25fr) minmax(180px, 1.2fr) minmax(130px, 0.8fr) auto auto;
+  gap: 14px;
+  align-items: end;
+  padding: 20px 22px;
+  border: 1px solid var(--line);
+  background: #fff;
+}
+.customer-user-account {
+  min-width: 0;
+  padding-bottom: 8px;
+}
+.customer-user-account > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.customer-user-account strong {
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.customer-user-account > span,
+.customer-user-account small {
+  display: block;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.customer-user-account > span {
+  font-size: 11px;
+  margin: 6px 0 3px 26px;
+}
+.customer-user-account small {
+  font-size: 10px;
+  margin-left: 26px;
+}
+.customer-user-account .status {
+  flex-shrink: 0;
+}
+.customer-user-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+  align-items: center;
+  min-width: 0;
+  padding-bottom: 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.customer-user-stats span:last-child {
+  flex-basis: 100%;
+  font-size: 10px;
+}
+.customer-user-active {
+  white-space: nowrap;
+  padding-bottom: 9px;
+}
+@media (max-width: 900px) {
+  .team-member {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .customer-user {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .customer-user-account,
+  .customer-user-stats {
+    grid-column: 1 / -1;
+  }
 }
 .admin-posts {
   display: flex;
@@ -3271,7 +3457,7 @@ legend small {
     padding: 13px 17px;
   }
   .chat-connection {
-    font-size: 8px;
+    font-size: 12px;
   }
   .forum-post {
     gap: 12px;

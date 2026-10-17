@@ -53,9 +53,13 @@ try {
   db = await openDatabase(JSON.parse(createVault().decrypt(stored.connection)));
   if (await db.prepare("SELECT id FROM users WHERE email=?").get(email))
     throw new Error("邮箱已存在；为避免意外提权，请使用独立管理员邮箱");
+  const userId = id();
   await db
     .prepare("INSERT INTO users VALUES (?,?,?,?,?,?)")
-    .run(id(), email, name, await hashPassword(password), "admin", Date.now());
+    .run(userId, email, name, await hashPassword(password), "admin", Date.now());
+  await db
+    .prepare("INSERT INTO staff_profiles(user_id,display_name,title,member_role,active,sort_order,created_at) VALUES (?,?,?,?,?,?,?)")
+    .run(userId, name, "店主", "owner", 1, 0, Date.now());
   console.log("管理员已创建。请通过网站登录后访问 /admin。");
 } catch (error) {
   console.error(error.message);

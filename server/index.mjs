@@ -5,10 +5,8 @@ const runtime = await createRuntime();
 const production = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT || 3001);
 if (production) {
-  const { default: next } = await import("next");
-  const frontend = next({ dev: false, hostname: "127.0.0.1", port });
-  await frontend.prepare();
-  runtime.app.use((req, res) => frontend.getRequestHandler()(req, res));
+  const { attachFrontend } = await import("./frontend.mjs");
+  await attachFrontend(runtime.app);
 }
 const server = runtime.app.listen(port, "0.0.0.0", () => {
   console.log(

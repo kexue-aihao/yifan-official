@@ -1,0 +1,348 @@
+:root {
+  --flow-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-feedback: 140ms;
+  --motion-state: 240ms;
+  --motion-view: 420ms;
+}
+
+/* A clipped, inert outgoing view overlaps the incoming Vue page. */
+.route-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  overflow: clip;
+  visibility: hidden;
+}
+.route-transition:not([data-phase="idle"]) {
+  visibility: visible;
+}
+.route-snapshot {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  contain: strict;
+}
+.route-snapshot * {
+  pointer-events: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+html[data-route-moving] #main > .route-stage {
+  opacity: 0;
+}
+.navigation-progress {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  inset: 0 0 auto;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  opacity: 0;
+}
+[dir="rtl"] .navigation-progress {
+  transform-origin: right;
+}
+.navigation-progress[data-phase="waiting"] {
+  animation: route-progress 1.4s var(--flow-ease) 120ms both;
+}
+.navigation-progress[data-phase="entering"] {
+  animation: route-complete 300ms ease-out both;
+}
+@keyframes route-progress {
+  from {
+    opacity: 1;
+    transform: scaleX(0.08);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(0.85);
+  }
+}
+@keyframes route-complete {
+  from {
+    opacity: 1;
+    transform: scaleX(0.85);
+  }
+  to {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
+/* One moving selection connects filters instead of flashing new backgrounds. */
+.motion-tabs button,
+.service-selector button {
+  position: relative;
+  isolation: isolate;
+}
+.motion-tabs button,
+.motion-tabs button.active {
+  background: transparent;
+  border-color: transparent;
+}
+.motion-tabs button.active {
+  color: var(--on-button);
+}
+.filter-highlight {
+  position: absolute;
+  inset: 0;
+  background: var(--button);
+  border-radius: inherit;
+  z-index: -1;
+}
+.filter-label {
+  position: relative;
+}
+.service-active-line {
+  position: absolute;
+  height: 2px;
+  inset-inline: 0;
+  bottom: -1px;
+  background: var(--gold);
+}
+.service-stage {
+  position: relative;
+}
+.service-stage > div {
+  width: 100%;
+}
+.gallery-grid,
+.packages-grid,
+.studio-service-list,
+.couture-service-list,
+.romance-service-list {
+  position: relative;
+}
+.gallery-item,
+.package-card {
+  animation: none;
+}
+
+.scene-progress button > span,
+.scene-progress button.selected > span {
+  overflow: hidden;
+  background: #ffffff50;
+}
+.scene-progress i {
+  display: block;
+  height: 100%;
+  background: white;
+  transform-origin: left;
+}
+[dir="rtl"] .scene-progress i {
+  transform-origin: right;
+}
+
+.modal[open] {
+  animation: dialog-in 320ms var(--flow-ease);
+}
+.modal[open][data-shared-image] {
+  animation: none;
+}
+.image-flight {
+  position: fixed;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  object-fit: cover;
+  pointer-events: none;
+  z-index: 1;
+}
+.modal[data-closing="true"]::backdrop {
+  animation: backdrop-leave 0.18s ease forwards;
+}
+@keyframes backdrop-leave {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :is(.button, .under-link, .cinema-book, .cinema-browse) {
+    transition:
+      background-color 0.24s,
+      color 0.24s,
+      border-color 0.24s,
+      transform 0.32s var(--flow-ease);
+  }
+  :is(.button, .under-link, .cinema-book) > svg {
+    transition: transform var(--motion-view) var(--flow-ease);
+  }
+  :is(.button, .under-link, .cinema-book):hover > svg {
+    transform: translate(3px, -3px);
+  }
+  :is(.button, .cinema-book):hover:not(:disabled) {
+    transform: translateY(-2px);
+  }
+  .gallery-plus > svg {
+    transform: rotate(-45deg) scale(0.8);
+    transition: transform 0.5s var(--flow-ease);
+  }
+  .gallery-item:hover .gallery-plus > svg {
+    transform: rotate(0) scale(1);
+  }
+}
+
+@media (max-width: 1050px) {
+  .header .nav {
+    display: flex;
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition:
+      opacity 180ms ease,
+      transform 260ms var(--flow-ease),
+      visibility 0s 260ms;
+  }
+  .header .nav.open {
+    visibility: visible;
+    pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0s;
+  }
+  .header .nav > a {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      opacity var(--motion-feedback) ease,
+      transform 220ms var(--flow-ease);
+  }
+  .header .nav.open > a {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(var(--nav-order, 0) * 22ms);
+  }
+  .nav > a:nth-child(2) {
+    --nav-order: 1;
+  }
+  .nav > a:nth-child(3) {
+    --nav-order: 2;
+  }
+  .nav > a:nth-child(4) {
+    --nav-order: 3;
+  }
+  .nav > a:nth-child(5) {
+    --nav-order: 4;
+  }
+}
+
+/* The conversation remains attached to its launcher while opening/closing. */
+.chat-flow-enter-active {
+  transition:
+    opacity 220ms ease-out,
+    transform 280ms var(--flow-ease);
+}
+.chat-flow-leave-active {
+  transition:
+    opacity 160ms ease-in,
+    transform 180ms var(--flow-ease);
+  pointer-events: none;
+}
+.chat-flow-enter-from,
+.chat-flow-leave-to {
+  opacity: 0;
+  transform: translateY(14px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-flow-enter-active,
+  .chat-flow-leave-active {
+    transition: opacity 80ms linear;
+  }
+  .chat-flow-enter-from,
+  .chat-flow-leave-to {
+    transform: none;
+  }
+}
+
+/* Keep the reading surface in place while a new category is fetched. */
+.feed-results {
+  position: relative;
+  min-height: 220px;
+}
+.feed-refresh {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  z-index: 1;
+  color: var(--gold);
+}
+.feed-results .forum-feed {
+  transition: opacity 180ms ease;
+}
+.feed-results[aria-busy="true"] .forum-feed {
+  opacity: 0.55;
+  transition-delay: 120ms;
+}
+.content-flow-enter-active {
+  transition:
+    opacity var(--motion-state) ease-out,
+    transform 300ms var(--flow-ease);
+}
+.content-flow-leave-active {
+  transition: opacity 120ms ease-in;
+}
+.content-flow-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.content-flow-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content-flow-enter-active,
+  .content-flow-leave-active {
+    transition: opacity 80ms linear;
+  }
+  .content-flow-enter-from {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .route-transition,
+  .navigation-progress {
+    display: none;
+  }
+  .route-stage {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  [data-flow],
+  .cinema-content,
+  .cinema-signature,
+  .cinema-english,
+  .cinema-actions,
+  .cinema-line > span,
+  .rose-photo {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+  }
+  .cinema-curtain {
+    display: none;
+  }
+  .cinema-media {
+    transform: none !important;
+  }
+  .header .nav,
+  .header .nav > a {
+    transform: none;
+    transition:
+      opacity 80ms linear,
+      visibility 0s;
+    transition-delay: 0s;
+  }
+  .modal[open],
+  .modal::backdrop {
+    animation: none;
+  }
+}

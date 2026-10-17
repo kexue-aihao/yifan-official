@@ -1,22 +1,26 @@
-"use client";
-import { useTranslations } from "next-intl";
+import { defineComponent, type VNodeChild } from "vue";
+import { useTranslations } from "./i18n";
 import { Link } from "./routing";
-export default function ConsentText() {
-  const t = useTranslations("common");
-  return (
-    <span>
-      {t.rich("consent", {
-        privacy: (text) => (
-          <Link to="/privacy" target="_blank">
-            {text}
-          </Link>
-        ),
-        terms: (text) => (
-          <Link to="/terms" target="_blank">
-            {text}
-          </Link>
-        ),
-      })}
-    </span>
-  );
-}
+const ConsentText = defineComponent(
+  () => {
+    const t = useTranslations("common");
+    return () => (
+      <span>
+        {t.rich("consent", {
+          privacy: (text: VNodeChild) => (
+            <Link to="/privacy" target="_blank">
+              {text}
+            </Link>
+          ),
+          terms: (text: VNodeChild) => (
+            <Link to="/terms" target="_blank">
+              {text}
+            </Link>
+          ),
+        })}
+      </span>
+    );
+  },
+  { name: "ConsentText", props: [] },
+);
+export default ConsentText;

@@ -4,7 +4,7 @@ import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { randomBytes } from "node:crypto";
 import { z, ZodError } from "zod";
-import { openDatabase, id, transaction, maintenance, migrateReadReceipts, migrateVisitors, migrateCommunity } from "./db.mjs";
+import { openDatabase, id, transaction, maintenance, migrateReadReceipts, migrateVisitors, migrateCommunity, migrateStaff, migrateCustomerProfiles } from "./db.mjs";
 import {configureProxy, createVisitorAudit, visitorRoutes} from './visitors.mjs';
 import {browserSignalsSchema, postImagesSchema, publicationSource, postSourceRoutes} from './community.mjs';
 import {imageSlots, siteImageURL, parsePostImages, MAX_POST_IMAGES} from '../shared/media.mjs';
@@ -29,6 +29,21 @@ const accountSchema = z.object({
   password: z.string().min(10, "密码至少 10 位").max(128),
 });
 const text = (min, max) => z.string().trim().min(min).max(max);
+const staffCreateSchema = accountSchema.extend({
+  name: text(1, 30),
+  title: text(1, 40),
+  sortOrder: z.number().int().min(0).max(100).default(0),
+});
+const staffUpdateSchema = z.object({
+  displayName: text(1, 30),
+  title: text(1, 40),
+  active: z.boolean(),
+  sortOrder: z.number().int().min(0).max(100),
+});
+const customerUpdateSchema = z.object({
+  name: text(1, 30),
+  active: z.boolean(),
+});
 const categories = ["婚纱灵感", "拍摄日记", "生日派对", "Cosplay", "交流问答"];
 const serviceSchema = z
   .object({
@@ -94,7 +109,16 @@ function fail(status, message) {
   throw error;
 }
 const publicUser = (u) =>
-  u ? { id: u.id, name: u.name, email: u.email, role: u.role } : null;
+  u
+    ? {
+        id: u.id,
+        name: u.staff_display_name || u.name,
+        email: u.email,
+        role: u.role,
+        staffTitle: u.staff_title || null,
+        staffRole: u.staff_member_role || null,
+      }
+    : null;
 const asService = (row) => ({
   ...row,
   features: JSON.parse(row.features),
@@ -110,6 +134,8 @@ export async function createApp(options = {}) {
   await migrateReadReceipts(db);
   await migrateVisitors(db);
   await migrateCommunity(db);
+  await migrateStaff(db);
+  await migrateCustomerProfiles(db);
   const recordVisit = createVisitorAudit(db);
   const vault = options.vault || createVault();
   const origin =
@@ -148,6 +174,12 @@ export async function createApp(options = {}) {
     (await db.prepare("SELECT id FROM users WHERE role='admin'").all()).map(
       (u) => u.id,
     );
+  const staff = async () =>
+    await db
+      .prepare(
+        "SELECT u.id,u.email,u.name,u.role,sp.display_name,sp.title,sp.member_role,sp.active,sp.sort_order,sp.created_at AS profile_created_at FROM users u JOIN staff_profiles sp ON sp.user_id=u.id WHERE u.role='admin' ORDER BY sp.sort_order,sp.created_at",
+      )
+      .all();
   const threadOwner = async (req, threadId) => {
     const thread = await db
       .prepare("SELECT * FROM conversations WHERE id=?")
@@ -169,6 +201,13 @@ export async function createApp(options = {}) {
       return next(Object.assign(new Error("请先登录"), { status: 401 }));
     if (req.user.role !== "admin")
       return next(Object.assign(new Error("需要管理员权限"), { status: 403 }));
+    next();
+  };
+  const owner = (req, _res, next) => {
+    if (!req.user)
+      return next(Object.assign(new Error("请先登录"), { status: 401 }));
+    if (req.user.role !== "admin" || req.user.staff_member_role !== "owner")
+      return next(Object.assign(new Error("需要店主权限"), { status: 403 }));
     next();
   };
   const loginSession = async (user, res) => {
@@ -229,10 +268,15 @@ export async function createApp(options = {}) {
     if (typeof req.cookies.yf_session === "string") {
       const session = await db
         .prepare(
-          "SELECT users.*, sessions.csrf, sessions.token_hash FROM sessions JOIN users ON users.id=sessions.user_id WHERE token_hash=? AND expires_at>?",
+          "SELECT users.*, sessions.csrf, sessions.token_hash, sp.display_name AS staff_display_name, sp.title AS staff_title, sp.member_role AS staff_member_role, sp.active AS staff_active, cp.active AS customer_active FROM sessions JOIN users ON users.id=sessions.user_id LEFT JOIN staff_profiles sp ON sp.user_id=users.id LEFT JOIN customer_profiles cp ON cp.user_id=users.id WHERE token_hash=? AND expires_at>?",
         )
         .get(tokenHash(req.cookies.yf_session), Date.now());
-      if (session) req.user = session;
+      if (
+        session &&
+        ((session.role === "admin" && session.staff_active) ||
+          (session.role === "customer" && session.customer_active !== 0))
+      )
+        req.user = session;
     }
     if (
       ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
@@ -292,6 +336,9 @@ export async function createApp(options = {}) {
       await db
         .prepare("INSERT INTO users VALUES (?,?,?,?,?,?)")
         .run(user.id, user.email, user.name, password, "customer", Date.now());
+      await db
+        .prepare("INSERT INTO customer_profiles(user_id,active,updated_at) VALUES (?,?,?)")
+        .run(user.id, 1, Date.now());
     } catch (error) {
       if (error.code === "ER_DUP_ENTRY") fail(409, "该邮箱已注册，请登录");
       throw error;
@@ -310,6 +357,30 @@ export async function createApp(options = {}) {
       ? await verifyPassword(input.password, user.password)
       : (await hashPassword(input.password), false);
     if (!correct) fail(401, "邮箱或密码不正确");
+    if (user.role === "admin") {
+      const profile = await db
+        .prepare("SELECT active FROM staff_profiles WHERE user_id=?")
+        .get(user.id);
+      if (profile && !profile.active) fail(403, "该店铺成员账号已停用");
+    }
+    if (user.role === "admin") {
+      let profile = await db
+        .prepare("SELECT display_name AS staff_display_name,title AS staff_title,member_role AS staff_member_role FROM staff_profiles WHERE user_id=?")
+        .get(user.id);
+      if (!profile) {
+        await db
+          .prepare("INSERT IGNORE INTO staff_profiles(user_id,display_name,title,member_role,active,sort_order,created_at) VALUES (?,?,?,?,?,?,?)")
+          .run(user.id, user.name, "店主", "owner", 1, 0, Date.now());
+        profile = { staff_display_name: user.name, staff_title: "店主", staff_member_role: "owner" };
+      }
+      Object.assign(user, profile || {});
+    }
+    if (user.role === "customer") {
+      const profile = await db
+        .prepare("SELECT active FROM customer_profiles WHERE user_id=?")
+        .get(user.id);
+      if (profile && !profile.active) fail(403, "该顾客账号已停用，请联系店方");
+    }
     if (req.user)
       await db
         .prepare("DELETE FROM sessions WHERE token_hash=?")
@@ -622,7 +693,7 @@ export async function createApp(options = {}) {
     if (existing.size >= 5) fail(429, "实时连接过多，请关闭多余页面");
     res.set({
       "Content-Type": "text/event-stream",
-      // Proxies (including Next.js dev rewrites) must not gzip/buffer events.
+      // Proxies must not gzip or buffer server-sent events.
       "Cache-Control": "no-store, no-transform",
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
@@ -664,8 +735,9 @@ export async function createApp(options = {}) {
       await db
         .prepare(
           `SELECT c.*,u.name AS customer_name,b.service_title,b.service_id,b.day,
+      ap.display_name AS assignee_name,ap.title AS assignee_title,
       (SELECT body FROM messages WHERE conversation_id=c.id AND created_at>? ORDER BY created_at DESC LIMIT 1) AS last_message
-      FROM conversations c JOIN users u ON u.id=c.user_id LEFT JOIN bookings b ON b.id=c.booking_id ${condition}
+      FROM conversations c JOIN users u ON u.id=c.user_id LEFT JOIN bookings b ON b.id=c.booking_id LEFT JOIN staff_profiles ap ON ap.user_id=c.assignee_id ${condition}
       ORDER BY COALESCE((SELECT MAX(created_at) FROM messages WHERE conversation_id=c.id), c.created_at) DESC LIMIT 200`,
         )
         .all(...params),
@@ -718,7 +790,7 @@ export async function createApp(options = {}) {
     }
     const rows = await db
       .prepare(
-        "SELECT m.*,u.name AS sender_name,u.role AS sender_role,r.read_at AS staff_read_at FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN message_staff_reads r ON r.message_id=m.id WHERE conversation_id=? AND m.created_at>? AND (m.created_at<? OR (m.created_at=? AND m.seq<?)) ORDER BY m.created_at DESC, m.seq DESC LIMIT 100",
+        "SELECT m.*,COALESCE(sp.display_name,u.name) AS sender_name,sp.title AS sender_title,u.role AS sender_role,r.read_at AS staff_read_at FROM messages m JOIN users u ON u.id=m.sender_id LEFT JOIN staff_profiles sp ON sp.user_id=m.sender_id LEFT JOIN message_staff_reads r ON r.message_id=m.id WHERE conversation_id=? AND m.created_at>? AND (m.created_at<? OR (m.created_at=? AND m.seq<?)) ORDER BY m.created_at DESC, m.seq DESC LIMIT 100",
       )
       .all(
         req.params.id,
@@ -759,6 +831,11 @@ export async function createApp(options = {}) {
       const { body } = z.object({ body: text(1, 2000) }).parse(req.body);
       const messageId = id();
       await transaction(db, async () => {
+      if (req.user.role === "admin" && !thread.assignee_id) {
+        await db
+          .prepare("UPDATE conversations SET assignee_id=?,assigned_at=? WHERE id=?")
+          .run(req.user.id, Date.now(), thread.id);
+      }
       await db
         .prepare(
           "INSERT INTO messages(id,conversation_id,sender_id,body,created_at) VALUES (?,?,?,?,?)",
@@ -773,6 +850,26 @@ export async function createApp(options = {}) {
       res.status(201).json({ id: messageId });
     },
   );
+  app.patch("/api/conversations/:id/assignee", admin, writeLimit, async (req, res) => {
+    const thread = await threadOwner(req, req.params.id);
+    const { assigneeId } = z.object({ assigneeId: z.uuid().nullable() }).parse(req.body);
+    if (assigneeId) {
+      const member = await db
+        .prepare("SELECT u.id FROM users u JOIN staff_profiles sp ON sp.user_id=u.id WHERE u.id=? AND u.role='admin' AND sp.active=1")
+        .get(assigneeId);
+      if (!member) fail(400, "请选择有效的店铺成员");
+    }
+    const assignedAt = assigneeId ? Date.now() : null;
+    await db
+      .prepare("UPDATE conversations SET assignee_id=?,assigned_at=? WHERE id=?")
+      .run(assigneeId, assignedAt, thread.id);
+    await audit(req.user.id, assigneeId ? "conversation.assign" : "conversation.unassign", thread.id);
+    emit([thread.user_id, ...(await admins())], {
+      type: "conversation-assigned",
+      conversationId: thread.id,
+    });
+    res.json({ ok: true, assigneeId, assignedAt });
+  });
   const postSelect = `SELECT p.*,u.name AS author,m.images,(SELECT COUNT(*) FROM comments WHERE post_id=p.id) AS comment_count,(SELECT COUNT(*) FROM likes WHERE post_id=p.id) AS like_count FROM posts p JOIN users u ON u.id=p.user_id LEFT JOIN post_media m ON m.post_id=p.id`;
   app.get("/api/posts", async (req, res) => {
     const page = z.coerce
@@ -864,6 +961,23 @@ export async function createApp(options = {}) {
       commentPageSize: 50,
     });
   });
+  app.post("/api/posts/:id/views", writeLimit, async (req, res) => {
+    const { eventId } = z.object({ eventId: z.uuid() }).parse(req.body);
+    const result = await transaction(db, async () => {
+      const post = await db.prepare(
+        "SELECT view_count FROM posts WHERE id=? AND hidden=0 FOR UPDATE",
+      ).get(req.params.id);
+      if (!post) fail(404, "帖子不存在或已被隐藏");
+      const event = await db.prepare(
+        "INSERT IGNORE INTO post_view_events(post_id,event_id,created_at) VALUES (?,?,?)",
+      ).run(req.params.id, eventId, Date.now());
+      if (event.changes) await db.prepare(
+        "UPDATE posts SET view_count=view_count+1 WHERE id=?",
+      ).run(req.params.id);
+      return { view_count: Number(post.view_count) + (event.changes ? 1 : 0), counted: !!event.changes };
+    });
+    res.json(result);
+  });
   app.delete("/api/posts/:id", auth, async (req, res) => {
     const post = await db
       .prepare("SELECT * FROM posts WHERE id=?")
@@ -908,6 +1022,115 @@ export async function createApp(options = {}) {
     res.json({ liked: !existing });
   });
   app.use("/api/admin", admin);
+  app.get("/api/admin/users", owner, async (req, res) => {
+    const search = String(req.query.search || "").trim().slice(0, 80);
+    const status = String(req.query.status || "all");
+    const clauses = ["u.role='customer'"];
+    const args = [];
+    if (search) {
+      clauses.push("(u.name LIKE ? OR u.email LIKE ?)");
+      const pattern = `%${search}%`;
+      args.push(pattern, pattern);
+    }
+    if (status === "active") clauses.push("COALESCE(cp.active,1)=1");
+    if (status === "inactive") clauses.push("COALESCE(cp.active,1)=0");
+    res.json(
+      await db
+        .prepare(
+          `SELECT u.id,u.email,u.name,u.created_at,COALESCE(cp.active,1) AS active,
+            COUNT(DISTINCT b.id) AS booking_count,
+            COUNT(DISTINCT c.id) AS conversation_count,
+            GREATEST(COALESCE(MAX(b.created_at),0),COALESCE(MAX(c.created_at),0)) AS last_activity
+           FROM users u
+           LEFT JOIN customer_profiles cp ON cp.user_id=u.id
+           LEFT JOIN bookings b ON b.user_id=u.id
+           LEFT JOIN conversations c ON c.user_id=u.id
+           WHERE ${clauses.join(" AND ")}
+           GROUP BY u.id,u.email,u.name,u.created_at,cp.active
+           ORDER BY u.created_at DESC
+           LIMIT 500`,
+        )
+        .all(...args),
+    );
+  });
+  app.patch("/api/admin/users/:id", owner, writeLimit, async (req, res) => {
+    const input = customerUpdateSchema.parse(req.body);
+    const user = await db
+      .prepare("SELECT id FROM users WHERE id=? AND role='customer'")
+      .get(req.params.id);
+    if (!user) fail(404, "注册用户不存在");
+    await transaction(db, async () => {
+      await db.prepare("UPDATE users SET name=? WHERE id=?").run(input.name, user.id);
+      await db
+        .prepare(
+          "INSERT INTO customer_profiles(user_id,active,updated_at) VALUES (?,?,?) ON DUPLICATE KEY UPDATE active=VALUES(active),updated_at=VALUES(updated_at)",
+        )
+        .run(user.id, Number(input.active), Date.now());
+      if (!input.active)
+        await db.prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
+      await audit(req.user.id, input.active ? "customer.update" : "customer.deactivate", user.id);
+    });
+    if (!input.active) {
+      for (const response of streams.get(user.id) || []) {
+        response.write("event: logout\ndata: {}\n\n");
+        response.end();
+      }
+    }
+    emit([user.id], { type: "customer-profile" });
+    res.json({ ok: true });
+  });
+  app.get("/api/admin/staff", admin, async (req, res) => {
+    const members = await staff();
+    res.json(
+      req.user.staff_member_role === "owner"
+        ? members
+        : members.map(({ email: _email, ...member }) => member),
+    );
+  });
+  app.post("/api/admin/staff", owner, writeLimit, async (req, res) => {
+    const input = staffCreateSchema.parse(req.body);
+    if (await db.prepare("SELECT id FROM users WHERE email=?").get(input.email))
+      fail(409, "该邮箱已注册，请使用其他邮箱");
+    const userId = id();
+    const passwordHash = await hashPassword(input.password);
+    try {
+      await transaction(db, async () => {
+        await db
+          .prepare("INSERT INTO users(id,email,name,password,role,created_at) VALUES (?,?,?,?,?,?)")
+          .run(userId, input.email, input.name, passwordHash, "admin", Date.now());
+        await db
+          .prepare("INSERT INTO staff_profiles(user_id,display_name,title,member_role,active,sort_order,created_at) VALUES (?,?,?,?,?,?,?)")
+          .run(userId, input.name, input.title, "staff", 1, input.sortOrder, Date.now());
+        await audit(req.user.id, "staff.create", userId);
+      });
+    } catch (error) {
+      if (error.code === "ER_DUP_ENTRY") fail(409, "该邮箱已注册，请使用其他邮箱");
+      throw error;
+    }
+    res.status(201).json({ id: userId });
+  });
+  app.patch("/api/admin/staff/:id", owner, writeLimit, async (req, res) => {
+    const input = staffUpdateSchema.parse(req.body);
+    if (req.params.id === req.user.id && !input.active)
+      fail(400, "不能停用当前登录账号");
+    const member = await db
+      .prepare("SELECT u.id FROM users u JOIN staff_profiles sp ON sp.user_id=u.id WHERE u.id=? AND u.role='admin'")
+      .get(req.params.id);
+    if (!member) fail(404, "店铺成员不存在");
+    await db
+      .prepare("UPDATE staff_profiles SET display_name=?,title=?,active=?,sort_order=? WHERE user_id=?")
+      .run(input.displayName, input.title, Number(input.active), input.sortOrder, req.params.id);
+    if (!input.active) {
+      await db.prepare("UPDATE conversations SET assignee_id=NULL,assigned_at=NULL WHERE assignee_id=?").run(req.params.id);
+      await db.prepare("DELETE FROM sessions WHERE user_id=?").run(req.params.id);
+      for (const response of streams.get(req.params.id) || []) {
+        response.write("event: logout\ndata: {}\n\n");
+        response.end();
+      }
+    }
+    await audit(req.user.id, input.active ? "staff.update" : "staff.deactivate", req.params.id);
+    res.json({ ok: true });
+  });
   visitorRoutes(app,db);
   postSourceRoutes(app,db);
   app.get("/api/admin/overview", async (_req, res) => {
@@ -986,14 +1209,14 @@ export async function createApp(options = {}) {
     emit([booking.user_id, ...(await admins())], { type: "booking" });
     res.json({ ok: true });
   });
-  app.get("/api/admin/services", async (_req, res) =>
+  app.get("/api/admin/services", owner, async (_req, res) =>
     res.json(
       (
         await db.prepare("SELECT * FROM services ORDER BY sort_order").all()
       ).map(asService),
     ),
   );
-  app.post("/api/admin/services", async (req, res) => {
+  app.post("/api/admin/services", owner, async (req, res) => {
     const input = serviceSchema.parse(req.body),
       serviceId = id();
     const values = [
@@ -1020,7 +1243,7 @@ export async function createApp(options = {}) {
     });
     res.status(201).json({ id: serviceId });
   });
-  app.put("/api/admin/services/:id", async (req, res) => {
+  app.put("/api/admin/services/:id", owner, async (req, res) => {
     const v = serviceSchema.parse(req.body);
     if (
       !(await db
@@ -1052,7 +1275,7 @@ export async function createApp(options = {}) {
     });
     res.json({ ok: true });
   });
-  app.get("/api/admin/settings", async (_req, res) => {
+  app.get("/api/admin/settings", owner, async (_req, res) => {
     const epay = await setting("epay");
     res.json({
       site: await setting("site"),
@@ -1061,7 +1284,7 @@ export async function createApp(options = {}) {
       epay: { ...epay, secret: "", hasSecret: !!epay.secret },
     });
   });
-  app.put("/api/admin/settings/:key", async (req, res) => {
+  app.put("/api/admin/settings/:key", owner, async (req, res) => {
     const key = req.params.key;
     let input;
     if (key === "site") {
@@ -1102,14 +1325,14 @@ export async function createApp(options = {}) {
     });
     res.json({ ok: true });
   });
-  app.get("/api/admin/posts", async (_req, res) =>
+  app.get("/api/admin/posts", owner, async (_req, res) =>
     res.json(
       (await db
         .prepare(`${postSelect} ORDER BY p.created_at DESC LIMIT 300`)
         .all()).map(asPost),
     ),
   );
-  app.patch("/api/admin/posts/:id", async (req, res) => {
+  app.patch("/api/admin/posts/:id", owner, async (req, res) => {
     const { hidden } = z.object({ hidden: z.boolean() }).parse(req.body);
     const result = await db
       .prepare("UPDATE posts SET hidden=? WHERE id=?")

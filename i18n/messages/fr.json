@@ -777,7 +777,8 @@
     "m_5b4fad1dc9cd": "9 images maximum par publication",
     "m_85a652af5fa0": "Choisissez une image par défaut ou collez une URL HTTPS. Les images par défaut suivent les réglages du site.",
     "m_ef7cc2dc73ff": "Les empreintes utilisent langue, fuseau, plateforme, écran et requête, sans canvas ni audio. Ces signaux modifiables ou falsifiables ne suffisent pas à identifier une personne.",
-    "m_7fe3cc9a8549": "Les images externes sont chargées par votre navigateur. Leur hébergeur reçoit votre IP réseau ; ce site n’envoie pas l’adresse de la page source."
+    "m_7fe3cc9a8549": "Les images externes sont chargées par votre navigateur. Leur hébergeur reçoit votre IP réseau ; ce site n’envoie pas l’adresse de la page source.",
+    "m_e50c1ae2991f": "{count, plural, one {# vue} other {# vues}}"
   },
   "common": {
     "consent": "J’ai lu et j’accepte la <privacy>politique de confidentialité</privacy> et les <terms>conditions de réservation</terms>.",

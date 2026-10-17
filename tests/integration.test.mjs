@@ -63,8 +63,9 @@ test("壹梵 API：完整业务及权限回归", async (t) => {
   const anon = new Client(),
     alice = new Client(),
     bob = new Client(),
-    admin = new Client();
-  let booking, threadId, payment, service;
+    admin = new Client(),
+    staff = new Client();
+  let booking, threadId, payment, service, staffId;
   const bookingBody = (time = "10:00") => ({
     serviceId: "bridal",
     day: tomorrow,
@@ -170,6 +171,25 @@ test("壹梵 API：完整业务及权限回归", async (t) => {
       ).status,
       200,
     );
+    assert.equal(admin.user.staffRole, "owner");
+    const createdStaff = await admin.req("/admin/staff", "POST", {
+      name: "林老师",
+      email: "photographer@example.com",
+      password: "Photographer123!",
+      title: "摄影师",
+      sortOrder: 1,
+    });
+    assert.equal(createdStaff.status, 201);
+    staffId = createdStaff.data.id;
+    const staffLogin = await staff.req("/auth/login", "POST", {
+      email: "photographer@example.com",
+      password: "Photographer123!",
+    });
+    assert.equal(staffLogin.status, 200);
+    assert.equal(staff.user.name, "林老师");
+    assert.equal(staff.user.staffTitle, "摄影师");
+    assert.equal(staff.user.staffRole, "staff");
+    assert.equal((await staff.req("/admin/settings/site", "PUT", {})).status, 403);
   });
   await t.test("预约容量、价格服务端计算、重复提交与对象隔离", async () => {
     const config = (await admin.req("/admin/settings")).data;
@@ -278,18 +298,34 @@ test("壹梵 API：完整业务及权限回归", async (t) => {
         .sender_role,
       "admin",
     );
+    let customerMessages = (await alice.req(`/conversations/${threadId}/messages`)).data;
+    assert.equal(customerMessages[0].sender_name, "测试管理员");
+    assert.equal(customerMessages[0].sender_title, "店主");
     assert.equal(
       (
-        await alice.req(`/conversations/${threadId}/messages`, "POST", {
-          body: "我想了解拍摄风格。",
+        await admin.req(`/conversations/${threadId}/assignee`, "PATCH", {
+          assigneeId: staffId,
+        })
+      ).status,
+      200,
+    );
+    const customerThread = (await alice.req("/conversations")).data.find(
+      (thread) => thread.id === threadId,
+    );
+    assert.equal(customerThread.assignee_name, "林老师");
+    assert.equal(customerThread.assignee_title, "摄影师");
+    assert.equal(
+      (
+        await staff.req(`/conversations/${threadId}/messages`, "POST", {
+          body: "我会负责与你沟通拍摄风格。",
         })
       ).status,
       201,
     );
-    assert.equal(
-      (await admin.req(`/conversations/${threadId}/messages`)).data.length,
-      2,
-    );
+    customerMessages = (await alice.req(`/conversations/${threadId}/messages`)).data;
+    assert.equal(customerMessages.length, 2);
+    assert.equal(customerMessages[1].sender_name, "林老师");
+    assert.equal(customerMessages[1].sender_title, "摄影师");
   });
   await t.test("易支付设置、签名、金额校验、伪回调拒绝与幂等到账", async () => {
     assert.equal(

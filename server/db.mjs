@@ -61,6 +61,65 @@ export async function initializeDatabase(db) {
   await migrateReadReceipts(db);
   await migrateVisitors(db);
   await migrateCommunity(db);
+  await migrateStaff(db);
+  await migrateCustomerProfiles(db);
+}
+export async function migrateCustomerProfiles(db) {
+  await db.exec(`CREATE TABLE IF NOT EXISTS customer_profiles (
+    user_id VARCHAR(36) PRIMARY KEY, active TINYINT NOT NULL DEFAULT 1, updated_at BIGINT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  ) ENGINE=InnoDB`);
+}
+export async function migrateStaff(db) {
+  const connection = await db.pool.getConnection();
+  let lockName;
+  try {
+    const [[row]] = await connection.query(
+      "SELECT CONCAT('yifan-staff:', LEFT(SHA2(DATABASE(),256),40)) AS name",
+    );
+    lockName = row.name;
+    const [[lock]] = await connection.query("SELECT GET_LOCK(?,15) AS acquired", [lockName]);
+    if (lock.acquired !== 1) throw new Error("Could not acquire staff schema lock");
+    await connection.query(`CREATE TABLE IF NOT EXISTS staff_profiles (
+      user_id VARCHAR(36) PRIMARY KEY, display_name VARCHAR(120) NOT NULL,
+      title VARCHAR(80) NOT NULL DEFAULT '店铺成员', member_role VARCHAR(20) NOT NULL DEFAULT 'staff', active TINYINT NOT NULL DEFAULT 1,
+      sort_order INT NOT NULL DEFAULT 0, created_at BIGINT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB`);
+    const [profileColumns] = await connection.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='staff_profiles' AND COLUMN_NAME='member_role'",
+    );
+    if (!profileColumns.length) {
+      await connection.query("ALTER TABLE staff_profiles ADD COLUMN member_role VARCHAR(20) NOT NULL DEFAULT 'staff' AFTER title");
+    }
+    await connection.query(
+      "UPDATE staff_profiles sp JOIN users u ON u.id=sp.user_id SET sp.member_role='owner' WHERE u.role='admin' AND sp.member_role='staff' AND sp.title IN ('店主','店铺成员')",
+    );
+    const [columns] = await connection.query(
+      "SELECT COLUMN_NAME FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='conversations' AND COLUMN_NAME IN ('assignee_id','assigned_at')",
+    );
+    const names = new Set(columns.map((column) => column.COLUMN_NAME));
+    if (!names.has("assignee_id"))
+      await connection.query("ALTER TABLE conversations ADD COLUMN assignee_id VARCHAR(36) NULL AFTER booking_id");
+    if (!names.has("assigned_at"))
+      await connection.query("ALTER TABLE conversations ADD COLUMN assigned_at BIGINT NULL AFTER assignee_id");
+    const [indexes] = await connection.query(
+      "SELECT INDEX_NAME FROM information_schema.statistics WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='conversations' AND INDEX_NAME='conversation_assignee'",
+    );
+    if (!indexes.length)
+      await connection.query("ALTER TABLE conversations ADD INDEX conversation_assignee(assignee_id)");
+    const [constraints] = await connection.query(
+      "SELECT CONSTRAINT_NAME FROM information_schema.key_column_usage WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='conversations' AND COLUMN_NAME='assignee_id' AND REFERENCED_TABLE_NAME='users'",
+    );
+    if (!constraints.length)
+      await connection.query("ALTER TABLE conversations ADD CONSTRAINT conversation_assignee_fk FOREIGN KEY (assignee_id) REFERENCES users(id) ON DELETE SET NULL");
+    await connection.query(
+      "INSERT IGNORE INTO staff_profiles(user_id,display_name,title,member_role,active,sort_order,created_at) SELECT id,name,'店主','owner',1,0,created_at FROM users WHERE role='admin'",
+    );
+  } finally {
+    if (lockName) await connection.query("SELECT RELEASE_LOCK(?)", [lockName]).catch(() => {});
+    connection.release();
+  }
 }
 export async function migrateCommunity(db) {
   const connection = await db.pool.getConnection();
@@ -74,6 +133,8 @@ export async function migrateCommunity(db) {
     for (const statement of sql.split(';').map(value => value.trim()).filter(Boolean)) await connection.query(statement);
     const [[column]] = await connection.query("SELECT CHARACTER_MAXIMUM_LENGTH AS size FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='services' AND COLUMN_NAME='image'");
     if (Number(column.size) < 2048) await connection.query('ALTER TABLE services MODIFY image VARCHAR(2048) NOT NULL');
+    const [[views]] = await connection.query("SELECT 1 AS present FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='posts' AND COLUMN_NAME='view_count'");
+    if (!views) await connection.query('ALTER TABLE posts ADD COLUMN view_count BIGINT UNSIGNED NOT NULL DEFAULT 0');
     await connection.query("INSERT IGNORE INTO settings(setting_key,value) VALUES ('media',?)", [JSON.stringify({images:{}})]);
   } finally {
     if (lockName) await connection.query('SELECT RELEASE_LOCK(?)',[lockName]).catch(() => {});
@@ -135,6 +196,8 @@ export async function maintenance(db, now = Date.now()) {
     await db.prepare("DELETE FROM sessions WHERE expires_at<=?").run(now);
     await db.prepare('DELETE FROM visitor_events WHERE created_at<=?').run(now - 180 * 86400000);
     await db.prepare('DELETE FROM post_sources WHERE created_at<=?').run(now - 180 * 86400000);
+    // Keep request deduplication for one day; lifetime totals stay on the post.
+    await db.prepare('DELETE FROM post_view_events WHERE created_at<=?').run(now - 86400000);
     await db.prepare('DELETE g FROM visitor_ips g LEFT JOIN visitor_events e ON e.ip=g.ip WHERE e.id IS NULL AND g.resolved_at<=?').run(now - 180 * 86400000);
   });
 }

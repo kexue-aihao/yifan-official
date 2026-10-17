@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "../shared/translator.mjs";
 import { locales, negotiateLocale, matchLocale } from "../i18n/locales.mjs";
 import { createRuntime } from "../server/install.mjs";
 

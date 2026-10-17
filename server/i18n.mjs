@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "../shared/translator.mjs";
 import { locales, defaultLocale, negotiateLocale } from "../i18n/locales.mjs";
 
 const sourceMap = JSON.parse(

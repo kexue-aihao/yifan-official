@@ -1,163 +1,186 @@
-"use client";
-import {SiteImage} from './MediaProvider';
-import { useState } from "react";
-import { Check, Palette, RotateCcw } from "lucide-react";
+import { Check, Palette, RotateCcw } from "lucide-vue-next";
+import { computed, defineComponent, ref as vueRef } from "vue";
 import { Modal } from "./components";
 import { useCopy } from "./i18n";
+import { SiteImage } from "./MediaProvider";
 import { useTheme } from "./ThemeProvider";
 import { themes, type ThemeId } from "./themes";
-
-export function ThemeChoices({
-  value,
-  onChange,
-}: {
-  value: ThemeId;
-  onChange: (theme: ThemeId) => void;
-}) {
-  const copy = useCopy();
-  return (
-    <div className="theme-choices" role="group" aria-label={copy("主题方案")}>
-      {themes.map((theme) => (
-        <button
-          key={theme.id}
-          type="button"
-          className="theme-choice"
-          data-palette={theme.id}
-          aria-label={copy(theme.name)}
-          aria-pressed={value === theme.id}
-          onClick={() => onChange(theme.id)}
-        >
-          <span className="theme-preview" aria-hidden="true">
-            <span className="theme-preview-top">
-              <span>YI FAN</span>
-              <span>— &nbsp; — &nbsp; —</span>
-            </span>
-            <span className={`theme-preview-composition preview-${theme.id}`}>
-              {theme.id === "ivory" ? (
-                <>
-                  <SiteImage src="/images/wedding.jpg" alt="" loading="lazy" />
-                  <span>
-                    Yours,
-                    <br />
-                    <i>always.</i>
-                  </span>
-                </>
-              ) : theme.id === "rose" ? (
-                <>
-                  <SiteImage src="/images/wedding.jpg" alt="" loading="lazy" />
-                  <span>
-                    With
-                    <br />
-                    <i>love.</i>
-                  </span>
-                  <SiteImage src="/images/story.jpg" alt="" loading="lazy" />
-                </>
-              ) : theme.id === "sage" ? (
-                <>
-                  <span>
-                    THE
-                    <br />
-                    NATURAL
-                    <br />
-                    MUSE.<i>01 — STUDIO</i>
-                  </span>
-                  <SiteImage src="/images/portrait.jpg" alt="" loading="lazy" />
-                </>
-              ) : (
-                <>
-                  <strong>YI FAN</strong>
-                  <span>
-                    BE THE
-                    <br />
-                    <i>MUSE.</i>
-                  </span>
-                  <SiteImage src="/images/wedding.jpg" alt="" loading="lazy" />
-                  <SiteImage src="/images/beauty.jpg" alt="" loading="lazy" />
-                </>
+export const ThemeChoices = defineComponent(
+  (props: { value: ThemeId; onChange: (theme: ThemeId) => void }) => {
+    const copy = useCopy();
+    return () => (
+      <div class="theme-choices" role="group" aria-label={copy("主题方案")}>
+        {themes.map((theme) => (
+          <button
+            key={theme.id}
+            type="button"
+            class="theme-choice"
+            data-palette={theme.id}
+            aria-label={copy(theme.name)}
+            aria-pressed={props.value === theme.id}
+            onClick={() => props.onChange(theme.id)}
+          >
+            <span class="theme-preview" aria-hidden="true">
+              <span class="theme-preview-top">
+                <span>YI FAN</span>
+                <span>— &nbsp; — &nbsp; —</span>
+              </span>
+              <span class={`theme-preview-composition preview-${theme.id}`}>
+                {theme.id === "ivory" ? (
+                  <>
+                    <SiteImage
+                      src="/images/wedding.jpg"
+                      alt=""
+                      loading="lazy"
+                    />
+                    <span>
+                      Yours,
+                      <br />
+                      <i>always.</i>
+                    </span>
+                  </>
+                ) : theme.id === "rose" ? (
+                  <>
+                    <SiteImage
+                      src="/images/wedding.jpg"
+                      alt=""
+                      loading="lazy"
+                    />
+                    <span>
+                      With
+                      <br />
+                      <i>love.</i>
+                    </span>
+                    <SiteImage src="/images/story.jpg" alt="" loading="lazy" />
+                  </>
+                ) : theme.id === "sage" ? (
+                  <>
+                    <span>
+                      THE
+                      <br />
+                      NATURAL
+                      <br />
+                      MUSE.<i>01 — STUDIO</i>
+                    </span>
+                    <SiteImage
+                      src="/images/portrait.jpg"
+                      alt=""
+                      loading="lazy"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <strong>YI FAN</strong>
+                    <span>
+                      BE THE
+                      <br />
+                      <i>MUSE.</i>
+                    </span>
+                    <SiteImage
+                      src="/images/wedding.jpg"
+                      alt=""
+                      loading="lazy"
+                    />
+                    <SiteImage src="/images/beauty.jpg" alt="" loading="lazy" />
+                  </>
+                )}
+              </span>
+              <span class="theme-preview-foot">
+                <span class="theme-swatches">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <span>YF</span>
+              </span>
+              {props.value === theme.id && (
+                <span class="theme-selected">
+                  <Check size={15} />
+                </span>
               )}
             </span>
-            <span className="theme-preview-foot">
-              <span className="theme-swatches">
-                <i />
-                <i />
-                <i />
-              </span>
-              <span>YF</span>
+            <span class="theme-choice-name">{copy(theme.name)}</span>
+            <span class="theme-choice-edition" lang="en">
+              {theme.edition}
             </span>
-            {value === theme.id && (
-              <span className="theme-selected">
-                <Check size={15} />
-              </span>
-            )}
-          </span>
-          <span className="theme-choice-name">{copy(theme.name)}</span>
-          <span className="theme-choice-edition" lang="en">
-            {theme.edition}
-          </span>
-          <span className="theme-choice-mood">{copy(theme.mood)}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export default function ThemeSwitcher() {
-  const copy = useCopy();
-  const { theme, preferred, siteTheme, choose } = useTheme();
-  const [open, setOpen] = useState(false);
-  const current = themes.find((t) => t.id === theme)!;
-  return (
-    <>
-      <button
-        className="theme-toggle icon-button"
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={copy("切换主题")}
-        aria-haspopup="dialog"
-        title={copy(current.name)}
-      >
-        <Palette size={18} aria-hidden="true" />
-        <span>{copy("主题")}</span>
-      </button>
-      {open && (
-        <Modal
-          title={copy("选择你的壹梵主题")}
-          wide
-          onClose={() => setOpen(false)}
+            <span class="theme-choice-mood">{copy(theme.mood)}</span>
+          </button>
+        ))}
+      </div>
+    );
+  },
+  { name: "ThemeChoices", props: ["value", "onChange"] },
+);
+const ThemeSwitcher = defineComponent(
+  () => {
+    const copy = useCopy();
+    const appearance = useTheme();
+    const open = vueRef(false);
+    const current = computed(() =>
+      themes.find((t) => t.id === appearance.theme)!,
+    );
+    return () => (
+      <>
+        <button
+          class="theme-toggle icon-button"
+          type="button"
+          onClick={() => (open.value = true)}
+          aria-label={copy("切换主题")}
+          aria-haspopup="dialog"
+          title={copy(current.value.name)}
         >
-          <div className="theme-studio">
-            <p className="theme-intro">
-              {copy("四种独立排版：电影叙事、浪漫拼贴、自然工作室与时装画册。")}
-            </p>
-            <ThemeChoices value={theme} onChange={choose} />
-            <div className="theme-studio-footer">
-              <button
-                className="text-button"
-                type="button"
-                onClick={() => choose(null)}
-                aria-pressed={!preferred}
-              >
-                <RotateCcw size={15} />
-                {copy("跟随品牌默认")}
-                <span className="theme-default-name">
-                  {copy(themes.find((t) => t.id === siteTheme)!.name)}
-                </span>
-              </button>
-              <button
-                className="button small"
-                type="button"
-                onClick={() => setOpen(false)}
-              >
-                {copy("完成")}
-              </button>
+          <Palette size={18} aria-hidden="true" />
+          <span>{copy("主题")}</span>
+        </button>
+        {open.value && (
+          <Modal
+            title={copy("选择你的壹梵主题")}
+            wide
+            onClose={() => (open.value = false)}
+          >
+            <div class="theme-studio">
+              <p class="theme-intro">
+                {copy(
+                  "四种独立排版：电影叙事、浪漫拼贴、自然工作室与时装画册。",
+                )}
+              </p>
+              <ThemeChoices
+                value={appearance.theme}
+                onChange={appearance.choose}
+              />
+              <div class="theme-studio-footer">
+                <button
+                  class="text-button"
+                  type="button"
+                  onClick={() => appearance.choose(null)}
+                  aria-pressed={!appearance.preferred}
+                >
+                  <RotateCcw size={15} />
+                  {copy("跟随品牌默认")}
+                  <span class="theme-default-name">
+                    {copy(
+                      themes.find((t) => t.id === appearance.siteTheme)!.name,
+                    )}
+                  </span>
+                </button>
+                <button
+                  class="button small"
+                  type="button"
+                  onClick={() => (open.value = false)}
+                >
+                  {copy("完成")}
+                </button>
+              </div>
+              <p class="theme-saved" role="status">
+                {copy("当前主题：{v0}", { v0: copy(current.value.name) })} ·{" "}
+                {copy("偏好将保存在此浏览器")}
+              </p>
             </div>
-            <p className="theme-saved" role="status">
-              {copy("当前主题：{v0}", { v0: copy(current.name) })} ·{" "}
-              {copy("偏好将保存在此浏览器")}
-            </p>
-          </div>
-        </Modal>
-      )}
-    </>
-  );
-}
+          </Modal>
+        )}
+      </>
+    );
+  },
+  { name: "ThemeSwitcher", props: [] },
+);
+export default ThemeSwitcher;

@@ -1,66 +1,150 @@
-"use client";
-import { Link as NextLink, usePathname, useRouter } from "../i18n/navigation";
 import {
-  useSearchParams as useNextSearchParams,
-  useParams as useNextParams,
-} from "next/navigation";
-import { useEffect, useMemo, type AnchorHTMLAttributes } from "react";
-
-type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & {
+  computed,
+  defineComponent,
+  onMounted,
+  reactive,
+  type AnchorHTMLAttributes,
+} from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { defaultLocale, locales } from "../i18n/locales.mjs";
+import { useLocale } from "./i18n";
+import { useRouteTransition } from "./RouteTransitions";
+export function stripLocale(path: string) {
+  const match = /^\/([^/?#]+)(.*)$/.exec(path);
+  return match && locales.includes(match[1])
+    ? (match[2].startsWith("/") ? match[2] : "/" + match[2]) || "/"
+    : path;
+}
+export function localizedPath(path: string, locale: string) {
+  if (!path.startsWith("/") || path.startsWith("//")) return path;
+  const clean = stripLocale(path);
+  return locale === defaultLocale
+    ? clean
+    : `/${locale}${clean === "/" ? "" : clean}`;
+}
+type LinkProps = {
   to: string;
-};
-export function Link({ to, ...props }: LinkProps) {
-  return <NextLink href={to} {...props} />;
-}
-export function NavLink({
-  to,
-  end: _end,
-  className,
-  ...props
-}: LinkProps & { end?: boolean }) {
-  const pathname = usePathname();
-  return (
-    <Link
-      to={to}
-      className={`${className || ""} ${pathname === to ? "active" : ""}`}
-      aria-current={pathname === to ? "page" : undefined}
-      {...props}
-    />
-  );
-}
+  end?: boolean;
+} & AnchorHTMLAttributes;
+export const Link = defineComponent(
+  (props: LinkProps, { attrs, slots }) => {
+    const router = useRouter(),
+      locale = useLocale(),
+      transition = useRouteTransition();
+    const href = computed(() => localizedPath(props.to, locale.value));
+    async function click(event: MouseEvent) {
+      if (typeof attrs.onClick === "function") attrs.onClick(event);
+      else if (Array.isArray(attrs.onClick))
+        attrs.onClick.forEach((handler) => handler(event));
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        attrs.target === "_blank" ||
+        attrs.download !== undefined
+      )
+        return;
+      const url = new URL(href.value, location.href);
+      if (url.origin !== location.origin) return;
+      event.preventDefault();
+      const commit = () => router.push(url.pathname + url.search + url.hash);
+      if (url.pathname !== location.pathname) await transition.navigate(commit);
+      else {
+        transition.cancel();
+        await commit();
+      }
+    }
+    return () => (
+      <a {...attrs} href={href.value} onClick={click}>
+        {slots.default?.()}
+      </a>
+    );
+  },
+  { name: "SiteLink", inheritAttrs: false, props: ["to", "end"] },
+);
+export const NavLink = defineComponent(
+  (props: LinkProps, { attrs, slots }) => {
+    const location = useLocation();
+    return () => (
+      <Link
+        {...attrs}
+        to={props.to}
+        class={[attrs.class, location.pathname === props.to ? "active" : ""]}
+        aria-current={location.pathname === props.to ? "page" : undefined}
+      >
+        {slots.default?.()}
+      </Link>
+    );
+  },
+  { name: "NavLink", inheritAttrs: false, props: ["to", "end"] },
+);
 export function useLocation() {
-  const pathname = usePathname(),
-    params = useNextSearchParams();
-  const search = params.toString();
-  return {
-    pathname,
-    search: search ? `?${search}` : "",
-    hash: typeof window === "undefined" ? "" : window.location.hash,
-  };
+  const route = useRoute();
+  return reactive({
+    pathname: computed(() => stripLocale(route.path)),
+    search: computed(() => {
+      const query = route.fullPath.split("?")[1]?.split("#")[0];
+      return query ? "?" + query : "";
+    }),
+    hash: computed(() => route.hash),
+  });
 }
 export function useNavigate() {
-  const router = useRouter();
-  return (to: string, options?: { replace?: boolean }) =>
-    options?.replace ? router.replace(to) : router.push(to);
+  const router = useRouter(),
+    locale = useLocale(),
+    transition = useRouteTransition();
+  return (
+    to: string,
+    options?: {
+      replace?: boolean;
+    },
+  ) => {
+    const url = localizedPath(to, locale.value);
+    const commit = () =>
+      options?.replace ? router.replace(url) : router.push(url);
+    if (
+      typeof window !== "undefined" &&
+      url.split(/[?#]/)[0] !== location.pathname
+    )
+      void transition.navigate(commit);
+    else {
+      transition.cancel();
+      void commit();
+    }
+  };
 }
-export function Navigate({ to, replace }: { to: string; replace?: boolean }) {
-  const router = useRouter();
-  useEffect(() => {
-    if (replace) router.replace(to);
-    else router.push(to);
-  }, [router, to, replace]);
-  return null;
-}
+export const Navigate = defineComponent(
+  (props: { to: string; replace?: boolean }) => {
+    const navigate = useNavigate();
+    onMounted(() => navigate(props.to, { replace: props.replace }));
+    return () => null;
+  },
+  { name: "Navigate", props: ["to", "replace"] },
+);
 export function useSearchParams() {
-  const search = useNextSearchParams().toString(),
-    pathname = usePathname(),
+  const route = useRoute(),
     router = useRouter();
-  const params = useMemo(() => new URLSearchParams(search), [search]);
-  const set = (value: URLSearchParams, options?: { replace?: boolean }) => {
-    const url = `${pathname}${value.size ? `?${value}` : ""}`;
-    if (options?.replace) router.replace(url, { scroll: false });
-    else router.push(url, { scroll: false });
+  const params = computed(
+    () =>
+      new URLSearchParams(route.fullPath.split("?")[1]?.split("#")[0] || ""),
+  );
+  const set = (
+    value: URLSearchParams,
+    options?: {
+      replace?: boolean;
+    },
+  ) => {
+    const url = `${route.path}${value.size ? "?" + value : ""}${route.hash}`;
+    void (options?.replace ? router.replace(url) : router.push(url));
   };
   return [params, set] as const;
 }
-export const useParams = () => useNextParams<{ id: string }>();
+export function useParams() {
+  const route = useRoute();
+  return reactive({
+    id: computed(() => route.params.id as string | undefined),
+  });
+}
