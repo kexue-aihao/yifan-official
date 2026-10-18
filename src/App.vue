@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   ArrowUpRight,
   LogOut,
@@ -15,15 +16,15 @@ import {
   watch,
   type VNodeChild,
 } from "vue";
-import { Loading } from "./components";
-import { useCopy } from "./i18n";
-import LanguageSwitcher from "./LanguageSwitcher";
-import { useSite } from "./lib";
-import { RouteTransitions } from "./RouteTransitions";
-import { Link, NavLink, Navigate, useLocation } from "./routing";
-import ThemeSwitcher from "./ThemeSwitcher";
-import Chat from "./views/Chat";
-import VisitTracker from "./VisitTracker";
+import { Loading } from "./components.vue";
+import { useCopy } from "./i18n.vue";
+import LanguageSwitcher from "./LanguageSwitcher.vue";
+import { useSite } from "./lib.vue";
+import { RouteTransitions } from "./RouteTransitions.vue";
+import { Link, NavLink, Navigate, useLocation } from "./routing.vue";
+import ThemeSwitcher from "./ThemeSwitcher.vue";
+import Chat from "./views/Chat.vue";
+import VisitTracker from "./VisitTracker.vue";
 const Brand = defineComponent(
   () => {
     const copy = useCopy();
@@ -281,3 +282,4 @@ const App = defineComponent(
   { name: "App", props: [] },
 );
 export default App;
+</script>

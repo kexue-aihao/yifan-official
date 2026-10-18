@@ -1,7 +1,8 @@
+<script lang="tsx">
 import { computed, defineComponent } from "vue";
-import { useCopy, useFormatting, useTranslations } from "../i18n";
-import { useSite } from "../lib";
-import { Link, useLocation } from "../routing";
+import { useCopy, useFormatting, useTranslations } from "../i18n.vue";
+import { useSite } from "../lib.vue";
+import { Link, useLocation } from "../routing.vue";
 const Legal = defineComponent(
   () => {
     const copy = useCopy();
@@ -121,3 +122,4 @@ const Legal = defineComponent(
   { name: "Legal", props: [] },
 );
 export default Legal;
+</script>

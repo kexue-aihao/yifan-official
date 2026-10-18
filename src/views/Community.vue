@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   ArrowLeft,
   Eye,
@@ -17,13 +18,13 @@ import {
   Transition,
 } from "vue";
 import { parseImageLinks, parsePostImages } from "../../shared/media.mjs";
-import { PostContent, PostSummary, browserSignals } from "../CommunityImages";
-import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components";
-import { countMessages, useCopy, useFormatting } from "../i18n";
-import { categories, send, useResource, useSite, type Post } from "../lib";
-import { FilterTabs } from "../motion";
-import { Link, useNavigate, useParams } from "../routing";
-import { PostSourceDetails } from "./PostSources";
+import { PostContent, PostSummary, browserSignals } from "../CommunityImages.vue";
+import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components.vue";
+import { countMessages, useCopy, useFormatting } from "../i18n.vue";
+import { categories, send, useResource, useSite, type Post } from "../lib.vue";
+import { FilterTabs } from "../motion.vue";
+import { Link, useNavigate, useParams } from "../routing.vue";
+import { PostSourceDetails } from "./PostSources.vue";
 type PostDetail = Post & {
   liked: boolean;
   comments: {
@@ -607,3 +608,4 @@ const Detail = defineComponent(
   },
   { name: "Detail", props: ["id"] },
 );
+</script>

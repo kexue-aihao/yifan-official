@@ -1,6 +1,7 @@
+<script lang="tsx">
 import { computed, defineComponent, ref as vueRef } from "vue";
 import { parsePostImages } from "../shared/media.mjs";
-import { useCopy } from "./i18n";
+import { useCopy } from "./i18n.vue";
 export const CommunityImage = defineComponent(
   (props: { url: string; alt?: string }) => {
     const copy = useCopy();
@@ -120,3 +121,6 @@ export function browserSignals() {
     concurrency: Math.min(1024, navigator.hardwareConcurrency || 0),
   };
 }
+
+export default {};
+</script>

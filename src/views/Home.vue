@@ -1,3 +1,4 @@
+<script lang="tsx">
 import { ArrowDown, ArrowUpRight, ChevronRight, UserRound } from "lucide-vue-next";
 import {
   AnimatePresence,
@@ -13,19 +14,19 @@ import {
   shallowRef,
   ref as vueRef,
 } from "vue";
-import { useCopy } from "../i18n";
-import { useSite } from "../lib";
-import { SiteImage, useImageSource } from "../MediaProvider";
+import { useCopy } from "../i18n.vue";
+import { useSite } from "../lib.vue";
+import { SiteImage, useImageSource } from "../MediaProvider.vue";
 import {
   flowEase,
   layoutFlow,
   useImageReveal,
   useMotionPreference,
   useReveal,
-} from "../motion";
-import { Link } from "../routing";
-import { useTheme } from "../ThemeProvider";
-import ThemeHome from "./ThemeHomes";
+} from "../motion.vue";
+import { Link } from "../routing.vue";
+import { useTheme } from "../ThemeProvider.vue";
+import ThemeHome from "./ThemeHomes.vue";
 const scenes = [
   {
     image: "/images/wedding.jpg",
@@ -556,3 +557,4 @@ const CinematicHome = defineComponent(
   },
   { name: "CinematicHome", props: [] },
 );
+</script>

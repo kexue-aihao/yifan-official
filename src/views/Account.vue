@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   CalendarDays,
   CheckCircle2,
@@ -12,10 +13,10 @@ import {
   ref as vueRef,
   watch,
 } from "vue";
-import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components";
-import { useCopy, useFormatting, useServiceTitle } from "../i18n";
-import { send, statusNames, useResource, useSite, type Booking } from "../lib";
-import { Link, useSearchParams } from "../routing";
+import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components.vue";
+import { useCopy, useFormatting, useServiceTitle } from "../i18n.vue";
+import { send, statusNames, useResource, useSite, type Booking } from "../lib.vue";
+import { Link, useSearchParams } from "../routing.vue";
 const Account = defineComponent(
   () => {
     const { money, date, time, dateTime } = useFormatting();
@@ -379,3 +380,4 @@ const Account = defineComponent(
   { name: "Account", props: [] },
 );
 export default Account;
+</script>

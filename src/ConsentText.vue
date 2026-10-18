@@ -1,6 +1,7 @@
+<script lang="tsx">
 import { defineComponent, type VNodeChild } from "vue";
-import { useTranslations } from "./i18n";
-import { Link } from "./routing";
+import { useTranslations } from "./i18n.vue";
+import { Link } from "./routing.vue";
 const ConsentText = defineComponent(
   () => {
     const t = useTranslations("common");
@@ -24,3 +25,4 @@ const ConsentText = defineComponent(
   { name: "ConsentText", props: [] },
 );
 export default ConsentText;
+</script>

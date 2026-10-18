@@ -1,5 +1,5 @@
 import type { ThemeId } from "./themes";
-import type { ImageMap } from "./MediaProvider";
+import type { ImageMap } from "./MediaProvider.vue";
 
 export type InitialState = {
   locale: string;

@@ -1,6 +1,7 @@
+<script lang="tsx">
 import { defineComponent, onMounted, shallowRef, watch } from "vue";
-import { send, useSite } from "./lib";
-import { useLocation } from "./routing";
+import { send, useSite } from "./lib.vue";
+import { useLocation } from "./routing.vue";
 const VisitTracker = defineComponent(
   () => {
     const site = useSite();
@@ -26,3 +27,4 @@ const VisitTracker = defineComponent(
   { name: "VisitTracker", props: [] },
 );
 export default VisitTracker;
+</script>

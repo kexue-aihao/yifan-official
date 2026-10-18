@@ -1,6 +1,6 @@
 # 壹梵定制 YI FAN
 
-Vue 3 Composition API / Vue Router / TypeScript / Vite SSR / Motion for Vue 前端，Express 5 / Node.js 24 / MySQL 8.0+ 后端。组件采用 Vue TSX，使用原生 ref、computed 与生命周期；包含登录后预约、Epay 订金、实时客服、180 天会话留存、社区及管理后台。
+Vite + Vue 3 Composition API / Vue Router / TypeScript / Vite SSR / Motion for Vue 前端，Express 5 / Node.js 24 / MySQL 8.0+ 后端。页面组件采用 Vue 单文件组件，使用 Vue JSX 渲染和原生 ref、computed 与生命周期；包含登录后预约、Epay 订金、实时客服、180 天会话留存、社区及管理后台。
 
 通过 ICU MessageFormat 提供简体中文、繁体中文、英语、日语、韩语、法语、德语、西班牙语、巴西葡萄牙语、俄语和阿拉伯语。字典按语言加载；页头及安装向导可切换语言，支持浏览器语言识别与一年期语言 Cookie。中文默认网址保持 `/services`，其他语言使用 `/en/services`、`/ar/services` 等路径；API 始终使用 `/api`。支持复数、Intl 数字/人民币/上海时区日期以及阿拉伯语 RTL。自定义业务内容保持原文。
 

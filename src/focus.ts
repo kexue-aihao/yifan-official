@@ -1,6 +1,6 @@
 import { nextTick, onMounted, onUnmounted } from "vue";
 import type { Router } from "vue-router";
-import { stripLocale } from "./routing";
+import { stripLocale } from "./routing.vue";
 
 // Client routing should give keyboard and screen-reader users a page arrival.
 // Query/filter changes, anchors and language changes retain their own focus.

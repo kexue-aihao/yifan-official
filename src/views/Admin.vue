@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   BarChart3,
   CalendarDays,
@@ -24,16 +25,16 @@ import {
   ref as vueRef,
   watch,
 } from "vue";
-import { SiteImage } from "../MediaProvider";
-import { ThemeChoices } from "../ThemeSwitcher";
-import { Empty, ErrorNotice, Loading, Modal } from "../components";
+import { SiteImage } from "../MediaProvider.vue";
+import { ThemeChoices } from "../ThemeSwitcher.vue";
+import { Empty, ErrorNotice, Loading, Modal } from "../components.vue";
 import {
   countMessages,
   localizeService,
   useCopy,
   useFormatting,
   useServiceTitle,
-} from "../i18n";
+} from "../i18n.vue";
 import {
   send,
   statusNames,
@@ -47,13 +48,13 @@ import {
   type SiteConfig,
   type StaffMember,
   type Thread,
-} from "../lib";
+} from "../lib.vue";
 import { defaultTheme, isTheme, type ThemeId } from "../themes";
 import { useVisibleReceipt } from "../useVisibleReceipt";
-import { ConversationView } from "./Chat";
-import MediaSettings from "./MediaSettings";
-import { PostSourceDetails } from "./PostSources";
-import Visitors, { AccessHistory } from "./Visitors";
+import { ConversationView } from "./Chat.vue";
+import MediaSettings from "./MediaSettings.vue";
+import { PostSourceDetails } from "./PostSources.vue";
+import Visitors, { AccessHistory } from "./Visitors.vue";
 type AdminSettings = {
   site: SiteConfig;
   booking: BookingConfig;
@@ -1517,3 +1518,4 @@ const EpayForm = defineComponent(
   },
   { name: "EpayForm", props: ["config", "busy", "onSave"] },
 );
+</script>

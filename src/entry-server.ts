@@ -1,5 +1,5 @@
 import { renderToString } from "@vue/server-renderer";
-import { createApplication } from "./application";
+import { createApplication } from "./application.vue";
 import type { InitialState } from "./context";
 
 export async function render(url: string, initial: InitialState) {

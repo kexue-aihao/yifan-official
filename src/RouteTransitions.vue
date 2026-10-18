@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   defineComponent,
   inject,
@@ -244,3 +245,6 @@ export const RouteTransitions = defineComponent(
   },
   { name: "RouteTransitions" },
 );
+
+export default {};
+</script>

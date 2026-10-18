@@ -1,17 +1,18 @@
+<script lang="tsx">
 import { Plus } from "lucide-vue-next";
 import { AnimatePresence, motion } from "motion-v";
 import { defineComponent, shallowRef, ref as vueRef } from "vue";
-import { Arrow, Modal } from "../components";
-import { useCopy } from "../i18n";
-import { SiteImage } from "../MediaProvider";
+import { Arrow, Modal } from "../components.vue";
+import { useCopy } from "../i18n.vue";
+import { SiteImage } from "../MediaProvider.vue";
 import {
   FilterTabs,
   flowEase,
   layoutFlow,
   useMotionPreference,
-} from "../motion";
-import { Link, useSearchParams } from "../routing";
-import { useTheme } from "../ThemeProvider";
+} from "../motion.vue";
+import { Link, useSearchParams } from "../routing.vue";
+import { useTheme } from "../ThemeProvider.vue";
 const works = [
   {
     title: "在爱里，自然发生",
@@ -207,3 +208,4 @@ const Portfolio = defineComponent(
   { name: "Portfolio", props: [] },
 );
 export default Portfolio;
+</script>

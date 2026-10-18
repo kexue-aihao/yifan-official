@@ -1,12 +1,13 @@
+<script lang="tsx">
 import { Check, Clock3 } from "lucide-vue-next";
 import { AnimatePresence, motion } from "motion-v";
 import { defineComponent, Fragment } from "vue";
-import { Arrow } from "../components";
-import { useCopy, useFormatting } from "../i18n";
-import type { Service } from "../lib";
-import { SiteImage } from "../MediaProvider";
-import { flowEase, layoutFlow, useMotionPreference } from "../motion";
-import { useTheme } from "../ThemeProvider";
+import { Arrow } from "../components.vue";
+import { useCopy, useFormatting } from "../i18n.vue";
+import type { Service } from "../lib.vue";
+import { SiteImage } from "../MediaProvider.vue";
+import { flowEase, layoutFlow, useMotionPreference } from "../motion.vue";
+import { useTheme } from "../ThemeProvider.vue";
 const ServiceLayouts = defineComponent(
   (props: {
     services: Service[];
@@ -194,3 +195,4 @@ const ServiceLayouts = defineComponent(
   { name: "ServiceLayouts", props: ["services", "book", "enabled"] },
 );
 export default ServiceLayouts;
+</script>

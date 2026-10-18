@@ -1,4 +1,4 @@
-import { createApplication } from "./application";
+import { createApplication } from "./application.vue";
 import type { InitialState } from "./context";
 
 declare global {

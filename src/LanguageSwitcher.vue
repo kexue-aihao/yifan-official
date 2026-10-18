@@ -1,9 +1,10 @@
+<script lang="tsx">
 import { Languages } from "lucide-vue-next";
 import { defineComponent, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import { localeNames, locales } from "../i18n/locales.mjs";
-import { useCopy, useLocale } from "./i18n";
-import { localizedPath, stripLocale } from "./routing";
+import { useCopy, useLocale } from "./i18n.vue";
+import { localizedPath, stripLocale } from "./routing.vue";
 export default defineComponent(
   () => {
     const locale = useLocale(),
@@ -65,3 +66,4 @@ export default defineComponent(
   },
   { name: "LanguageSwitcher" },
 );
+</script>

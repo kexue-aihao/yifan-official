@@ -1,7 +1,8 @@
+<script lang="tsx">
 import { defineComponent, ref as vueRef } from "vue";
-import { ErrorNotice, Loading, Modal } from "../components";
-import { useCopy, useFormatting, useLocale } from "../i18n";
-import { useResource } from "../lib";
+import { ErrorNotice, Loading, Modal } from "../components.vue";
+import { useCopy, useFormatting, useLocale } from "../i18n.vue";
+import { useResource } from "../lib.vue";
 type Location = {
   country: string;
   region: string;
@@ -292,3 +293,4 @@ const Visitors = defineComponent(
   { name: "Visitors", props: [] },
 );
 export default Visitors;
+</script>

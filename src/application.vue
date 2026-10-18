@@ -1,3 +1,4 @@
+<script lang="tsx">
 import { createSSRApp, defineComponent, h } from "vue";
 import {
   createMemoryHistory,
@@ -7,39 +8,39 @@ import {
   type RouteRecordRaw,
 } from "vue-router";
 import { defaultLocale, locales } from "../i18n/locales.mjs";
-import App, { Protected } from "./App";
+import App, { Protected } from "./App.vue";
 import { useDialogFocusTracking, useRouteFocus } from "./focus";
 import type { InitialState } from "./context";
-import { provideI18n, loadLocale, registerMessages, useCopy } from "./i18n";
-import { provideSite } from "./lib";
-import { provideMedia } from "./MediaProvider";
-import { provideRouteTransitions } from "./RouteTransitions";
-import { stripLocale } from "./routing";
-import { provideTheme } from "./ThemeProvider";
-import Home from "./views/Home";
+import { provideI18n, loadLocale, registerMessages, useCopy } from "./i18n.vue";
+import { provideSite } from "./lib.vue";
+import { provideMedia } from "./MediaProvider.vue";
+import { provideRouteTransitions } from "./RouteTransitions.vue";
+import { stripLocale } from "./routing.vue";
+import { provideTheme } from "./ThemeProvider.vue";
+import Home from "./views/Home.vue";
 const pages = [
   { path: "/", component: Home },
-  { path: "/services", component: () => import("./views/Services") },
-  { path: "/portfolio", component: () => import("./views/Portfolio") },
-  { path: "/community", component: () => import("./views/Community") },
-  { path: "/community/:id", component: () => import("./views/Community") },
-  { path: "/login", component: () => import("./views/Auth") },
-  { path: "/register", component: () => import("./views/Auth") },
+  { path: "/services", component: () => import("./views/Services.vue") },
+  { path: "/portfolio", component: () => import("./views/Portfolio.vue") },
+  { path: "/community", component: () => import("./views/Community.vue") },
+  { path: "/community/:id", component: () => import("./views/Community.vue") },
+  { path: "/login", component: () => import("./views/Auth.vue") },
+  { path: "/register", component: () => import("./views/Auth.vue") },
   {
     path: "/account",
-    component: () => import("./views/Account"),
+    component: () => import("./views/Account.vue"),
     meta: { protected: true },
   },
   {
     path: "/admin",
-    component: () => import("./views/Admin"),
+    component: () => import("./views/Admin.vue"),
     meta: { protected: true, admin: true },
   },
-  { path: "/privacy", component: () => import("./views/Legal") },
-  { path: "/terms", component: () => import("./views/Legal") },
+  { path: "/privacy", component: () => import("./views/Legal.vue") },
+  { path: "/terms", component: () => import("./views/Legal.vue") },
   {
     path: "/install",
-    component: () => import("./views/Install"),
+    component: () => import("./views/Install.vue"),
     meta: { install: true },
   },
 ];
@@ -130,3 +131,6 @@ export function createApplication(initial: InitialState, ssr = false) {
   app.use(router);
   return { app, router };
 }
+
+export default {};
+</script>

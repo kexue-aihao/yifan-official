@@ -1,17 +1,18 @@
+<script lang="tsx">
 import { Eye, EyeOff } from "lucide-vue-next";
 import { computed, defineComponent, ref as vueRef } from "vue";
-import { Arrow, ErrorNotice, Loading } from "../components";
-import ConsentText from "../ConsentText";
-import { useCopy } from "../i18n";
-import { useSite } from "../lib";
-import { SiteImage } from "../MediaProvider";
+import { Arrow, ErrorNotice, Loading } from "../components.vue";
+import ConsentText from "../ConsentText.vue";
+import { useCopy } from "../i18n.vue";
+import { useSite } from "../lib.vue";
+import { SiteImage } from "../MediaProvider.vue";
 import {
   Link,
   Navigate,
   useLocation,
   useNavigate,
   useSearchParams,
-} from "../routing";
+} from "../routing.vue";
 const Auth = defineComponent(
   () => {
     const copy = useCopy();
@@ -175,3 +176,4 @@ const Auth = defineComponent(
   { name: "Auth", props: [] },
 );
 export default Auth;
+</script>

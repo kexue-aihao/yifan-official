@@ -1,3 +1,4 @@
+<script lang="tsx">
 import { CalendarDays, ShieldCheck } from "lucide-vue-next";
 import {
   computed,
@@ -6,11 +7,11 @@ import {
   ref as vueRef,
   watch,
 } from "vue";
-import ConsentText from "../ConsentText";
-import { SiteImage } from "../MediaProvider";
-import { useTheme } from "../ThemeProvider";
-import { Arrow, ErrorNotice, Loading, Modal } from "../components";
-import { countMessages, useCopy, useFormatting } from "../i18n";
+import ConsentText from "../ConsentText.vue";
+import { SiteImage } from "../MediaProvider.vue";
+import { useTheme } from "../ThemeProvider.vue";
+import { Arrow, ErrorNotice, Loading, Modal } from "../components.vue";
+import { countMessages, useCopy, useFormatting } from "../i18n.vue";
 import {
   chinaDate,
   send,
@@ -18,10 +19,10 @@ import {
   useSite,
   type Booking,
   type Service,
-} from "../lib";
-import { FilterTabs } from "../motion";
-import { useNavigate, useSearchParams } from "../routing";
-import ServiceLayouts from "./ServiceLayouts";
+} from "../lib.vue";
+import { FilterTabs } from "../motion.vue";
+import { useNavigate, useSearchParams } from "../routing.vue";
+import ServiceLayouts from "./ServiceLayouts.vue";
 const Services = defineComponent(
   () => {
     const appearance = useTheme();
@@ -285,3 +286,4 @@ const BookingModal = defineComponent(
   },
   { name: "BookingModal", props: ["service", "onClose"] },
 );
+</script>

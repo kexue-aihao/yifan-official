@@ -1,3 +1,4 @@
+<script lang="tsx">
 import { ChevronLeft, MessageCircle, Send, X } from "lucide-vue-next";
 import {
   computed,
@@ -9,9 +10,9 @@ import {
   ref as vueRef,
   watch,
 } from "vue";
-import { Empty, ErrorNotice, Loading } from "../components";
+import { Empty, ErrorNotice, Loading } from "../components.vue";
 import { dialogOpener } from "../focus";
-import { useCopy, useFormatting, useServiceTitle } from "../i18n";
+import { useCopy, useFormatting, useServiceTitle } from "../i18n.vue";
 import {
   api,
   send,
@@ -19,8 +20,8 @@ import {
   useSite,
   type Message,
   type Thread,
-} from "../lib";
-import { Link, useLocation } from "../routing";
+} from "../lib.vue";
+import { Link, useLocation } from "../routing.vue";
 import { useVisibleReceipt } from "../useVisibleReceipt";
 function mergeMessages(items: Message[]) {
   const cutoff = Date.now() - 180 * 86400000;
@@ -485,3 +486,4 @@ const Chat = defineComponent(
   { name: "Chat", props: [] },
 );
 export default Chat;
+</script>

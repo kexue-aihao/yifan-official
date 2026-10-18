@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   defineComponent,
   inject,
@@ -63,3 +64,6 @@ export const SiteImage = defineComponent(
   },
   { name: "SiteImage", inheritAttrs: false, props: ["src"] },
 );
+
+export default {};
+</script>

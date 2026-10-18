@@ -1,9 +1,10 @@
+<script lang="tsx">
 import { defineComponent, ref as vueRef } from "vue";
 import { imageSlots, siteImageURL } from "../../shared/media.mjs";
-import { ErrorNotice } from "../components";
-import { useCopy } from "../i18n";
-import { send, useSite } from "../lib";
-import { useMedia, type ImageMap } from "../MediaProvider";
+import { ErrorNotice } from "../components.vue";
+import { useCopy } from "../i18n.vue";
+import { send, useSite } from "../lib.vue";
+import { useMedia, type ImageMap } from "../MediaProvider.vue";
 const labels: Record<string, string> = {
   hero: "场景影像",
   wedding: "婚纱影像",
@@ -107,3 +108,4 @@ const MediaSettings = defineComponent(
   { name: "MediaSettings", props: [] },
 );
 export default MediaSettings;
+</script>

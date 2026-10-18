@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   inject,
   onBeforeUnmount,
@@ -11,10 +12,10 @@ import {
   type MaybeRefOrGetter,
 } from "vue";
 import { useRouter } from "vue-router";
-import { localizeService, useCopy } from "./i18n";
-import { useMedia, type ImageMap } from "./MediaProvider";
-import { localizedPath, stripLocale } from "./routing";
-import { useTheme } from "./ThemeProvider";
+import { localizeService, useCopy } from "./i18n.vue";
+import { useMedia, type ImageMap } from "./MediaProvider.vue";
+import { localizedPath, stripLocale } from "./routing.vue";
+import { useTheme } from "./ThemeProvider.vue";
 import type { ThemeId } from "./themes";
 export type User = {
   id: string;
@@ -396,3 +397,6 @@ export function useResource<T>(path: MaybeRefOrGetter<string | null>) {
   });
   return reactive({ data, error, loading, reload });
 }
+
+export default {};
+</script>

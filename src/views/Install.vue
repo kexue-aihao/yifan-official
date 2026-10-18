@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,9 +15,9 @@ import {
   ref as vueRef,
   watch,
 } from "vue";
-import { useCopy, useLocale } from "../i18n";
-import LanguageSwitcher from "../LanguageSwitcher";
-import { Link } from "../routing";
+import { useCopy, useLocale } from "../i18n.vue";
+import LanguageSwitcher from "../LanguageSwitcher.vue";
+import { Link } from "../routing.vue";
 type Connection = {
   host: string;
   port: number;
@@ -579,3 +580,4 @@ const Install = defineComponent(
   { name: "Install", props: [] },
 );
 export default Install;
+</script>

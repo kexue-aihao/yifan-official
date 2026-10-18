@@ -1,6 +1,7 @@
+<script lang="tsx">
 import { LayoutGroup, motion } from "motion-v";
 import { computed, defineComponent, onMounted, onUnmounted, ref } from "vue";
-import { useCopy } from "./i18n";
+import { useCopy } from "./i18n.vue";
 export const flowEase = [0.16, 1, 0.3, 1] as [number, number, number, number];
 export const layoutFlow = {
   type: "spring",
@@ -86,3 +87,6 @@ export const FilterTabs = defineComponent(
   },
   { name: "FilterTabs", props: ["items", "value", "onChange", "label"] },
 );
+
+export default {};
+</script>

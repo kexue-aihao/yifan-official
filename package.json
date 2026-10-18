@@ -39,6 +39,7 @@
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/node": "^24.0.0",
+    "@vitejs/plugin-vue": "^6.0.10",
     "@vitejs/plugin-vue-jsx": "^5.1.6",
     "concurrently": "^9.2.1",
     "prettier": "^3.9.10",

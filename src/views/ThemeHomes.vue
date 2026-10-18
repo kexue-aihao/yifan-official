@@ -1,17 +1,18 @@
+<script lang="tsx">
 import { ArrowUpRight } from "lucide-vue-next";
 import { motion } from "motion-v";
 import { defineComponent } from "vue";
-import { useCopy } from "../i18n";
-import { useSite } from "../lib";
-import { SiteImage } from "../MediaProvider";
+import { useCopy } from "../i18n.vue";
+import { useSite } from "../lib.vue";
+import { SiteImage } from "../MediaProvider.vue";
 import {
   flowEase,
   useImageReveal,
   useMotionPreference,
   useReveal,
-} from "../motion";
-import { Link } from "../routing";
-import { useTheme } from "../ThemeProvider";
+} from "../motion.vue";
+import { Link } from "../routing.vue";
+import { useTheme } from "../ThemeProvider.vue";
 const Action = defineComponent(
   (props: { secondary?: boolean }) => {
     const copy = useCopy();
@@ -332,3 +333,4 @@ const ThemeHome = defineComponent(
   { name: "ThemeHome", props: [] },
 );
 export default ThemeHome;
+</script>

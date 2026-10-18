@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   computed,
   defineComponent,
@@ -7,8 +8,8 @@ import {
 } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { defaultLocale, locales } from "../i18n/locales.mjs";
-import { useLocale } from "./i18n";
-import { useRouteTransition } from "./RouteTransitions";
+import { useLocale } from "./i18n.vue";
+import { useRouteTransition } from "./RouteTransitions.vue";
 export function stripLocale(path: string) {
   const match = /^\/([^/?#]+)(.*)$/.exec(path);
   return match && locales.includes(match[1])
@@ -148,3 +149,6 @@ export function useParams() {
     id: computed(() => route.params.id as string | undefined),
   });
 }
+
+export default {};
+</script>

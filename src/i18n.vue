@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   computed,
   inject,
@@ -12,7 +13,7 @@ import catalogue from "../i18n/catalogue.json";
 import { defaultLocale, isRtl, locales } from "../i18n/locales.mjs";
 import sourceMap from "../i18n/source-map.json";
 import { createTranslator } from "../shared/translator.mjs";
-import type { Service } from "./lib";
+import type { Service } from "./lib.vue";
 const dictionaries = import.meta.glob("../i18n/messages/*.json", {
   import: "default",
 }) as Record<string, () => Promise<Record<string, Record<string, string>>>>;
@@ -185,3 +186,6 @@ export function useServiceTitle() {
     return original?.title === title ? copy(title) : title;
   };
 }
+
+export default {};
+</script>

@@ -1,3 +1,4 @@
+<script lang="tsx">
 import {
   computed,
   inject,
@@ -62,3 +63,6 @@ export function provideTheme(
   );
   return state;
 }
+
+export default {};
+</script>

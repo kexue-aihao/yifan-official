@@ -1,7 +1,8 @@
+<script lang="tsx">
 import { defineComponent, ref as vueRef } from "vue";
-import { Empty, ErrorNotice, Loading } from "../components";
-import { useCopy, useFormatting } from "../i18n";
-import { useResource } from "../lib";
+import { Empty, ErrorNotice, Loading } from "../components.vue";
+import { useCopy, useFormatting } from "../i18n.vue";
+import { useResource } from "../lib.vue";
 type Source = {
   post_id: string;
   user_id: string;
@@ -176,3 +177,4 @@ const PostSources = defineComponent(
   { name: "PostSources", props: ["postId"] },
 );
 export default PostSources;
+</script>

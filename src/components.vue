@@ -1,3 +1,4 @@
+<script lang="tsx">
 import { ArrowUpRight, LoaderCircle, X } from "lucide-vue-next";
 import {
   defineComponent,
@@ -6,10 +7,10 @@ import {
   watch,
   type VNodeChild,
 } from "vue";
-import { useCopy } from "./i18n";
+import { useCopy } from "./i18n.vue";
 import { dialogOpener } from "./focus";
 import { imageFlight } from "./imageFlight";
-import { useMotionPreference } from "./motion";
+import { useMotionPreference } from "./motion.vue";
 export const Arrow = () => (
   <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
 );
@@ -228,3 +229,6 @@ export const Modal = defineComponent(
   },
   { name: "Modal", props: ["title", "onClose", "wide", "origin"] },
 );
+
+export default {};
+</script>

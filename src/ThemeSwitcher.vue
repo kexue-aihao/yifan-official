@@ -1,9 +1,10 @@
+<script lang="tsx">
 import { Check, Palette, RotateCcw } from "lucide-vue-next";
 import { computed, defineComponent, ref as vueRef } from "vue";
-import { Modal } from "./components";
-import { useCopy } from "./i18n";
-import { SiteImage } from "./MediaProvider";
-import { useTheme } from "./ThemeProvider";
+import { Modal } from "./components.vue";
+import { useCopy } from "./i18n.vue";
+import { SiteImage } from "./MediaProvider.vue";
+import { useTheme } from "./ThemeProvider.vue";
 import { themes, type ThemeId } from "./themes";
 export const ThemeChoices = defineComponent(
   (props: { value: ThemeId; onChange: (theme: ThemeId) => void }) => {
@@ -184,3 +185,4 @@ const ThemeSwitcher = defineComponent(
   { name: "ThemeSwitcher", props: [] },
 );
 export default ThemeSwitcher;
+</script>
