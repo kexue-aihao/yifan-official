@@ -1,0 +1,833 @@
+/* EZ-Theme inspired workspace layer.
+ *
+ * The public homepage keeps the editorial image-led treatment. This layer
+ * brings the account, service, authentication, and management surfaces into
+ * one calm product workspace with the same theme tokens already used by YI FAN.
+ */
+:root {
+  --ez-radius: max(var(--card-radius), 12px);
+  --ez-radius-sm: max(var(--control-radius), 8px);
+  --ez-shadow: 0 18px 50px color-mix(in srgb, var(--ink) 10%, transparent);
+  --ez-shadow-soft: 0 8px 24px color-mix(in srgb, var(--ink) 7%, transparent);
+  --ez-ring: 0 0 0 3px color-mix(in srgb, var(--gold) 18%, transparent);
+}
+
+@supports not (color: color-mix(in srgb, black 10%, transparent)) {
+  :root {
+    --ez-shadow: 0 18px 50px #00000018;
+    --ez-shadow-soft: 0 8px 24px #00000012;
+    --ez-ring: 0 0 0 3px #806b4930;
+  }
+}
+
+/* The application shell uses a quiet grid and a floating header, like the
+   dashboard layout in EZ-Theme. */
+.header {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--line) 70%, transparent),
+    0 10px 30px color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.account-page,
+.services-page {
+  width: min(1240px, calc(100% - 64px));
+  max-width: none;
+  padding-block: 46px 90px;
+}
+
+.account-heading {
+  position: relative;
+  align-items: center;
+  min-height: 170px;
+  margin-bottom: 20px;
+  padding: 30px 34px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background:
+    radial-gradient(
+      circle at 94% 18%,
+      color-mix(in srgb, var(--gold) 20%, transparent),
+      transparent 34%
+    ),
+    linear-gradient(135deg, var(--surface), var(--soft));
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.account-heading::after {
+  content: "YF";
+  position: absolute;
+  inset-inline-end: 32px;
+  bottom: -42px;
+  color: color-mix(in srgb, var(--gold) 13%, transparent);
+  font:
+    170px/1 Georgia,
+    serif;
+  pointer-events: none;
+}
+
+.account-heading > * {
+  position: relative;
+  z-index: 1;
+}
+
+.account-heading h1 {
+  max-width: 680px;
+  margin: 10px 0 7px;
+  font-size: clamp(30px, 3.4vw, 44px);
+  letter-spacing: 0.02em;
+}
+
+.account-heading p {
+  font-size: 13px;
+}
+
+.account-heading .button {
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--button) 22%, transparent);
+}
+
+.account-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.account-stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  min-width: 0;
+  padding: 19px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.account-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--gold) 55%, var(--line));
+  box-shadow: var(--ez-shadow);
+}
+
+.account-stat-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  color: var(--gold);
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.account-stat-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.account-stat-copy span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.account-stat-copy strong {
+  color: var(--ink);
+  font:
+    700 27px/1.15 Georgia,
+    serif;
+  overflow-wrap: anywhere;
+}
+
+.account-stat-copy small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.account-toolbar {
+  align-items: center;
+  gap: 14px;
+  margin: 25px 0 18px;
+  padding: 7px 10px 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.account-toolbar > .filter-tabs {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  border: 0;
+  margin: 0;
+}
+
+.account-toolbar .filter-tabs button {
+  border: 0;
+  border-radius: var(--ez-radius-sm);
+  color: var(--muted);
+  padding: 10px 15px;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.account-toolbar .filter-tabs button:hover,
+.account-toolbar .filter-tabs button.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+.account-toolbar > .text-button {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 5px 9px;
+  border-radius: var(--ez-radius-sm);
+}
+
+.bookings-list {
+  gap: 15px;
+}
+
+.booking-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.booking-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  box-shadow: var(--ez-shadow);
+}
+
+.booking-top {
+  padding: 14px 21px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--soft) 72%, var(--surface));
+}
+
+.booking-body {
+  padding: 24px 22px 20px;
+}
+
+.booking-body h2 {
+  font-size: 24px;
+  letter-spacing: 0.02em;
+}
+
+.booking-amount {
+  min-width: 160px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface));
+}
+
+.booking-amount strong {
+  color: var(--gold);
+  font-size: 25px;
+}
+
+.booking-actions {
+  padding: 12px 21px;
+  background: color-mix(in srgb, var(--soft) 34%, var(--surface));
+}
+
+/* Services become a product catalogue: clear filters, elevated cards, and
+   a visible selected/hover state. */
+.services-page {
+  position: relative;
+}
+
+.services-page > .page-title {
+  max-width: none;
+  margin-bottom: 23px;
+  padding: 30px 34px;
+  text-align: start;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background: linear-gradient(
+    135deg,
+    var(--surface),
+    color-mix(in srgb, var(--soft) 70%, var(--surface))
+  );
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.services-page > .page-title h1 {
+  margin: 9px 0 9px;
+  font-size: clamp(31px, 4vw, 48px);
+}
+
+.services-page > .page-title p {
+  max-width: 640px;
+}
+
+.services-page > .filter-tabs {
+  justify-content: flex-start;
+  gap: 6px;
+  margin-bottom: 22px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.services-page > .filter-tabs button {
+  border: 0;
+  border-radius: calc(var(--ez-radius-sm) - 2px);
+  padding: 10px 16px;
+}
+
+.services-page > .filter-tabs button:hover {
+  color: var(--ink);
+  background: var(--soft);
+}
+
+.services-page > .filter-tabs button.active {
+  color: var(--on-button);
+  background: var(--button);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--button) 24%, transparent);
+}
+
+.packages-grid {
+  gap: 17px;
+}
+
+.package-card {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.package-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--gold) 52%, var(--line));
+  box-shadow: var(--ez-shadow);
+}
+
+.package-card > .image-wrap {
+  height: 255px;
+}
+
+.package-content {
+  padding: 24px;
+}
+
+.package-content h2 {
+  font-size: 26px;
+}
+
+/* Authentication uses the same elevated workspace shell as the dashboard. */
+.auth-page {
+  width: min(1120px, calc(100% - 64px));
+  min-height: 620px;
+  margin: 44px auto 84px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow);
+}
+
+.auth-art {
+  min-height: 620px;
+}
+
+.auth-form-wrap {
+  max-width: none;
+  padding: 54px clamp(30px, 6vw, 72px);
+}
+
+.auth-form-wrap h1 {
+  font-size: clamp(27px, 3vw, 36px);
+}
+
+.auth-form-wrap .form {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: color-mix(in srgb, var(--paper) 62%, var(--surface));
+}
+
+.auth-form-wrap .button.full {
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--button) 22%, transparent);
+}
+
+/* Admin workspace: a persistent, card-like navigation rail and compact data
+   surfaces make the existing management functions feel like one product. */
+.admin-shell {
+  width: min(1440px, calc(100% - 64px));
+  max-width: none;
+  grid-template-columns: 248px minmax(0, 1fr);
+  gap: 24px;
+  padding-block: 34px 88px;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: 103px;
+  align-self: start;
+  min-height: 640px;
+  padding: 24px 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius);
+  background: linear-gradient(
+    180deg,
+    var(--surface),
+    color-mix(in srgb, var(--soft) 45%, var(--surface))
+  );
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.admin-sidebar h1 {
+  margin: 10px 8px 5px;
+  font-size: 28px;
+}
+
+.admin-sidebar > p {
+  margin-inline: 8px;
+}
+
+.admin-sidebar nav {
+  gap: 4px;
+  margin-top: 26px;
+}
+
+.admin-sidebar nav button {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--ez-radius-sm);
+  color: var(--muted);
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-sidebar nav button:hover {
+  color: var(--ink);
+  background: var(--soft);
+  transform: translateX(2px);
+}
+
+.admin-sidebar nav button.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 var(--gold);
+}
+
+.admin-side-note {
+  margin: 48px 8px 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+}
+
+.admin-content {
+  min-width: 0;
+}
+
+.admin-title {
+  margin-bottom: 17px;
+  padding: 18px 21px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.admin-title h2 {
+  font-size: 27px;
+}
+
+.stats-grid {
+  gap: 14px;
+  background: transparent;
+  border: 0;
+}
+
+.stats-grid > div {
+  position: relative;
+  min-height: 138px;
+  overflow: hidden;
+  padding: 21px;
+  border: 1px solid var(--line);
+  border-radius: var(--ez-radius-sm);
+  background: var(--surface);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.stats-grid > div::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: 0.8;
+}
+
+.stats-grid strong {
+  font-size: 32px;
+}
+
+.admin-welcome {
+  position: relative;
+  overflow: hidden;
+  margin-top: 18px;
+  padding: 29px;
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--gold);
+  border-radius: var(--ez-radius-sm);
+  background:
+    radial-gradient(
+      circle at 95% 0%,
+      color-mix(in srgb, var(--gold) 18%, transparent),
+      transparent 36%
+    ),
+    var(--soft);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+.admin-welcome h3 {
+  margin: 13px 0 9px;
+  font-size: 28px;
+}
+
+.admin-welcome p {
+  max-width: 650px;
+}
+
+.admin-quick {
+  margin-top: 22px;
+}
+
+.admin-order,
+.admin-services > article,
+.settings-form,
+.team-create,
+.team-member,
+.customer-user,
+.admin-posts > article {
+  border-radius: var(--ez-radius-sm);
+  box-shadow: var(--ez-shadow-soft);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-order:hover,
+.admin-services > article:hover,
+.team-member:hover,
+.customer-user:hover,
+.admin-posts > article:hover {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--line));
+  box-shadow: var(--ez-shadow);
+}
+
+.admin-order {
+  padding: 21px;
+}
+
+.admin-order-actions {
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-services > article {
+  padding: 14px 16px;
+}
+
+.admin-services article > img {
+  width: 88px;
+  height: 96px;
+  border-radius: var(--ez-radius-sm);
+}
+
+.settings-sections {
+  gap: 16px;
+}
+
+.settings-form {
+  padding: 25px;
+}
+
+.admin-inbox {
+  overflow: hidden;
+  border-radius: var(--ez-radius);
+  box-shadow: var(--ez-shadow-soft);
+}
+
+/* Shared inputs and dialogs follow the same token system. */
+.form input:not([type="checkbox"]):not([type="radio"]),
+.form textarea,
+.form select,
+.admin-toolbar select {
+  border-radius: var(--ez-radius-sm);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.form input:not([type="checkbox"]):not([type="radio"]):focus,
+.form textarea:focus,
+.form select:focus,
+.admin-toolbar select:focus {
+  border-color: var(--gold);
+  box-shadow: var(--ez-ring);
+}
+
+.modal {
+  border-radius: var(--ez-radius);
+  box-shadow: var(--ez-shadow);
+}
+
+.button,
+.icon-button,
+.text-button,
+.account-stat-card,
+.booking-card,
+.package-card,
+.admin-order,
+.admin-services > article {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 1100px) {
+  .account-page,
+  .services-page,
+  .admin-shell {
+    width: min(100% - 44px, 980px);
+  }
+
+  .admin-shell {
+    grid-template-columns: 205px minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .account-summary {
+    gap: 10px;
+  }
+
+  .account-stat-card {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 760px) {
+  .account-page,
+  .services-page,
+  .admin-shell,
+  .auth-page {
+    width: calc(100% - 32px);
+  }
+
+  .account-page,
+  .services-page {
+    padding-block: 30px 64px;
+  }
+
+  .account-heading {
+    display: block;
+    min-height: 0;
+    padding: 24px 21px;
+  }
+
+  .account-heading::after {
+    inset-inline-end: -9px;
+    bottom: -25px;
+    font-size: 110px;
+  }
+
+  .account-heading .button {
+    width: 100%;
+    margin-top: 19px;
+  }
+
+  .account-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .account-stat-card {
+    gap: 9px;
+    padding: 14px 12px;
+  }
+
+  .account-stat-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .account-stat-copy strong {
+    font-size: 23px;
+  }
+
+  .account-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 8px;
+  }
+
+  .account-toolbar > .text-button {
+    justify-content: center;
+  }
+
+  .booking-amount {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .services-page > .page-title {
+    padding: 24px 21px;
+  }
+
+  .services-page > .filter-tabs {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .services-page > .filter-tabs button {
+    flex: 0 0 auto;
+  }
+
+  .auth-page {
+    display: block;
+    min-height: 0;
+    margin-block: 24px 58px;
+  }
+
+  .auth-art {
+    min-height: 260px;
+    height: 260px;
+  }
+
+  .auth-form-wrap {
+    padding: 34px 20px 40px;
+  }
+
+  .auth-form-wrap .form {
+    padding: 17px;
+  }
+
+  .admin-shell {
+    display: block;
+    padding-block: 22px 60px;
+  }
+
+  .admin-sidebar {
+    position: static;
+    min-height: 0;
+    margin-bottom: 16px;
+    padding: 17px 13px 13px;
+  }
+
+  .admin-sidebar nav {
+    margin-top: 17px;
+    overflow-x: auto;
+    flex-direction: row;
+    padding-bottom: 2px;
+  }
+
+  .admin-sidebar nav button {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .admin-side-note,
+  .admin-sidebar > p {
+    display: none;
+  }
+
+  .admin-title {
+    padding: 15px 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-grid > div {
+    min-height: 110px;
+    padding: 16px;
+  }
+
+  .stats-grid strong {
+    font-size: 25px;
+  }
+
+  .admin-welcome {
+    padding: 22px 19px;
+  }
+}
+
+@media (max-width: 390px) {
+  .account-page,
+  .services-page,
+  .admin-shell,
+  .auth-page {
+    width: calc(100% - 24px);
+  }
+
+  .account-summary {
+    gap: 8px;
+  }
+
+  .account-stat-card {
+    display: block;
+  }
+
+  .account-stat-copy {
+    margin-top: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-stat-card,
+  .booking-card,
+  .package-card,
+  .admin-sidebar nav button,
+  .admin-order,
+  .admin-services > article,
+  .team-member,
+  .customer-user,
+  .admin-posts > article {
+    transition: none;
+  }
+
+  .account-stat-card:hover,
+  .booking-card:hover,
+  .package-card:hover,
+  .admin-sidebar nav button:hover {
+    transform: none;
+  }
+}

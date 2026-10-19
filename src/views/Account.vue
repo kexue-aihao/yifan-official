@@ -15,7 +15,13 @@ import {
 } from "vue";
 import { Arrow, Empty, ErrorNotice, Loading, Modal } from "../components.vue";
 import { useCopy, useFormatting, useServiceTitle } from "../i18n.vue";
-import { send, statusNames, useResource, useSite, type Booking } from "../lib.vue";
+import {
+  send,
+  statusNames,
+  useResource,
+  useSite,
+  type Booking,
+} from "../lib.vue";
 import { Link, useSearchParams } from "../routing.vue";
 const Account = defineComponent(
   () => {
@@ -103,6 +109,44 @@ const Account = defineComponent(
             ["completed", "expired", "cancelled"].includes(b.status)),
       ),
     );
+    const accountStats = computed(() => {
+      const list = bookings.data || [];
+      const value = (count: number) => (bookings.data ? count : "—");
+      return [
+        {
+          label: copy("全部预约"),
+          value: value(list.length),
+          note: copy("已创建的专属时刻"),
+          icon: CalendarDays,
+        },
+        {
+          label: copy("待付订金"),
+          value: value(
+            list.filter((booking) => booking.status === "pending").length,
+          ),
+          note: copy("需要尽快完成支付"),
+          icon: Clock3,
+        },
+        {
+          label: copy("进行中"),
+          value: value(
+            list.filter((booking) =>
+              ["paid", "confirmed", "refund_review"].includes(booking.status),
+            ).length,
+          ),
+          note: copy("顾问正在为你安排"),
+          icon: MessageCircle,
+        },
+        {
+          label: copy("已完成"),
+          value: value(
+            list.filter((booking) => booking.status === "completed").length,
+          ),
+          note: copy("值得珍藏的记录"),
+          icon: CheckCircle2,
+        },
+      ];
+    });
     return () => (
       <div class="page container account-page">
         <div class="account-heading">
@@ -131,6 +175,20 @@ const Account = defineComponent(
             )}
           </div>
         )}
+        <div class="account-summary" aria-label={copy("预约概览")}>
+          {accountStats.value.map((stat) => (
+            <article class="account-stat-card" key={stat.label}>
+              <div class="account-stat-icon" aria-hidden="true">
+                <stat.icon size={18} strokeWidth={1.7} />
+              </div>
+              <div class="account-stat-copy">
+                <span>{stat.label}</span>
+                <strong>{stat.value}</strong>
+                <small>{stat.note}</small>
+              </div>
+            </article>
+          ))}
+        </div>
         <div class="account-toolbar">
           <div class="filter-tabs">
             {filters.value.map((f) => (
